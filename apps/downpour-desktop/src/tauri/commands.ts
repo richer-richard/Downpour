@@ -1,5 +1,11 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { GameRecord, GameRecordInput } from '@downpour/shared';
+import type {
+  GameAction,
+  GameRecord,
+  GameRecordInput,
+  GameSessionFrame,
+  GameSettings,
+} from '@downpour/shared';
 
 export async function getRecordsCommand(): Promise<GameRecord[]> {
   return invoke<GameRecord[]>('get_records');
@@ -19,4 +25,23 @@ export async function setBestWpmCommand(value: number): Promise<void> {
 
 export async function resetRecordsCommand(): Promise<void> {
   await invoke('reset_records');
+}
+
+export async function createGameSessionCommand(
+  settings: GameSettings,
+  globalBestWpm: number,
+): Promise<GameSessionFrame> {
+  return invoke<GameSessionFrame>('create_game_session', { settings, globalBestWpm });
+}
+
+export async function tickGameSessionCommand(
+  sessionId: string,
+  deltaSeconds: number,
+  actions: GameAction[],
+): Promise<GameSessionFrame> {
+  return invoke<GameSessionFrame>('tick_game_session', { sessionId, deltaSeconds, actions });
+}
+
+export async function destroyGameSessionCommand(sessionId: string): Promise<void> {
+  await invoke('destroy_game_session', { sessionId });
 }

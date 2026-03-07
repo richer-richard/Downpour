@@ -16,18 +16,18 @@ export function getDifficultyProfile(level: number, mode: DifficultyMode): Diffi
   const mod = MODE_MODIFIER[mode];
 
   const spawnIntervalSeconds = clamp(
-    (1.45 - safeLevel * 0.055) / mod.spawnMultiplier,
+    (1.35 - safeLevel * 0.075) / mod.spawnMultiplier,
     SPAWN_INTERVAL_MIN,
-    1.45,
+    1.35,
   );
 
   const fallSpeedNormalized = clamp(
-    (0.11 + safeLevel * 0.013) * mod.speedMultiplier,
+    (0.125 + safeLevel * 0.018) * mod.speedMultiplier,
     FALL_SPEED_MIN,
-    0.52,
+    0.64,
   );
 
-  const maxConcurrentWords = clamp(Math.floor(3 + safeLevel * 0.48), 3, mode === 'hard' ? 14 : 12);
+  const maxConcurrentWords = clamp(Math.floor(3 + safeLevel * 0.7), 3, mode === 'hard' ? 16 : 14);
 
   return {
     spawnIntervalSeconds,

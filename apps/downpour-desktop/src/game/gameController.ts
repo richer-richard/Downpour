@@ -1,11 +1,27 @@
-import type { DifficultyMode, GameSettings } from '@downpour/shared';
-import { GROUND_BASE_Y, LEVEL_UP_SECONDS, LEVEL_UP_WORDS, MODE_MODIFIER, WATERLINE_RISE_RANGE } from './constants';
+import type {
+  GameSettings,
+  HudSnapshot,
+  ImpactEvent,
+  RenderWord,
+  SessionEndSummary,
+  SessionRenderSnapshot,
+} from '@downpour/shared';
+import {
+  GROUND_BASE_Y,
+  LEVEL_UP_SECONDS,
+  LEVEL_UP_WORDS,
+  MODE_MODIFIER,
+  RECENT_WORD_MEMORY,
+  WATERLINE_RISE_RANGE,
+  WPM_ACTIVE_WINDOW_SECONDS,
+} from './constants';
 import { getDifficultyProfile } from './difficulty';
 import { computeAccuracy, computeWpm } from './metrics';
 import { calculateWordScore } from './scoring';
 import { pickTargetWord } from './targeting';
 import { pickWord } from './wordBuckets';
-import type { ImpactEvent, RenderWord, SessionRenderSnapshot } from '../engine/types';
+
+export type { HudSnapshot, SessionEndSummary } from '@downpour/shared';
 
 interface ActiveWord {
   id: string;
@@ -21,33 +37,6 @@ interface ActiveWord {
 export interface GameControllerOptions {
   settings: GameSettings;
   globalBestWpm: number;
-}
-
-export interface SessionEndSummary {
-  durationSeconds: number;
-  score: number;
-  accuracy: number;
-  sessionBestWpm: number;
-  averageWpm: number;
-  levelReached: number;
-  mistakes: number;
-  misses: number;
-  mode: DifficultyMode;
-}
-
-export interface HudSnapshot {
-  elapsedSeconds: number;
-  level: number;
-  score: number;
-  combo: number;
-  lives: number;
-  waterLevel: number;
-  accuracy: number;
-  currentWpm: number;
-  sessionBestWpm: number;
-  globalBestWpm: number;
-  isPaused: boolean;
-  isGameOver: boolean;
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -108,6 +97,8 @@ export class GameController {
 
   private targetWordId: string | null = null;
 
+  private recentWords: string[] = [];
+
   private nextLevelAtSeconds = LEVEL_UP_SECONDS;
 
   private spawnAccumulator = 0;
@@ -115,6 +106,10 @@ export class GameController {
   private spawnTickCounter = 0;
 
   private sessionBestWpm = 0;
+
+  private wpmActiveSeconds = 0;
+
+  private typingWindowRemaining = 0;
 
   private globalBestWpm: number;
 
@@ -149,7 +144,13 @@ export class GameController {
     this.spawnWords(dt);
     this.updateWords(dt);
 
-    const currentWpm = computeWpm(this.correctChars, this.elapsedSeconds);
+    if (this.typingWindowRemaining > 0) {
+      const activeDt = Math.min(dt, this.typingWindowRemaining);
+      this.wpmActiveSeconds += activeDt;
+      this.typingWindowRemaining = Math.max(0, this.typingWindowRemaining - dt);
+    }
+
+    const currentWpm = computeWpm(this.correctChars, this.wpmActiveSeconds);
     this.sessionBestWpm = Math.max(this.sessionBestWpm, currentWpm);
   }
 
@@ -172,7 +173,7 @@ export class GameController {
   }
 
   public getHudSnapshot(): HudSnapshot {
-    const currentWpm = computeWpm(this.correctChars, this.elapsedSeconds);
+    const currentWpm = computeWpm(this.correctChars, this.wpmActiveSeconds);
     const accuracy = computeAccuracy(this.correctChars, this.totalTypedChars);
 
     return {
@@ -228,6 +229,7 @@ export class GameController {
     }
 
     this.totalTypedChars += 1;
+    this.refreshTypingWindow();
 
     const target = this.targetWord;
     if (!target) {
@@ -261,6 +263,7 @@ export class GameController {
       return;
     }
 
+    this.refreshTypingWindow();
     target.typedCount -= 1;
     this.typedBuffer = target.text.slice(0, target.typedCount);
 
@@ -276,7 +279,7 @@ export class GameController {
 
   public buildEndSummary(): SessionEndSummary {
     const accuracy = computeAccuracy(this.correctChars, this.totalTypedChars);
-    const averageWpm = computeWpm(this.correctChars, this.elapsedSeconds);
+    const averageWpm = computeWpm(this.correctChars, this.wpmActiveSeconds);
 
     return {
       durationSeconds: this.elapsedSeconds,
@@ -322,8 +325,9 @@ export class GameController {
       this.spawnAccumulator -= profile.spawnIntervalSeconds;
       this.spawnTickCounter += 1;
 
-      const active = new Set(this.words.map((word) => word.text));
-      const text = pickWord(this.level, active, this.random);
+      const blocked = new Set([...this.words.map((word) => word.text), ...this.recentWords]);
+      const text = pickWord(this.level, blocked, this.random);
+      this.rememberWord(text);
 
       const x = 0.1 + this.random() * 0.8;
       const y = -0.05 - this.random() * 0.2;
@@ -440,5 +444,17 @@ export class GameController {
   private endGame(): void {
     this.paused = false;
     this.gameOver = true;
+  }
+
+  private rememberWord(word: string): void {
+    this.recentWords.push(word);
+
+    if (this.recentWords.length > RECENT_WORD_MEMORY) {
+      this.recentWords.splice(0, this.recentWords.length - RECENT_WORD_MEMORY);
+    }
+  }
+
+  private refreshTypingWindow(): void {
+    this.typingWindowRemaining = WPM_ACTIVE_WINDOW_SECONDS;
   }
 }

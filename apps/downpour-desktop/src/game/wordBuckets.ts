@@ -30,28 +30,53 @@ function clampBucket(bucket: WordBucket): string[] {
   }
 }
 
-export function pickBucket(level: number): WordBucket {
-  if (level <= 3) {
-    return 'short';
+interface BucketWeights {
+  short: number;
+  medium: number;
+  long: number;
+}
+
+function bucketWeights(level: number): BucketWeights {
+  if (level <= 2) {
+    return { short: 0.88, medium: 0.12, long: 0 };
+  }
+
+  if (level <= 4) {
+    return { short: 0.62, medium: 0.38, long: 0 };
   }
 
   if (level <= 7) {
-    return Math.random() > 0.3 ? 'medium' : 'short';
+    return { short: 0.24, medium: 0.64, long: 0.12 };
   }
 
-  if (level <= 12) {
-    return Math.random() > 0.35 ? 'medium' : 'long';
+  if (level <= 10) {
+    return { short: 0.08, medium: 0.54, long: 0.38 };
   }
 
-  return Math.random() > 0.2 ? 'long' : 'medium';
+  return { short: 0.04, medium: 0.28, long: 0.68 };
+}
+
+export function pickBucket(level: number, random: () => number): WordBucket {
+  const weights = bucketWeights(level);
+  const roll = random();
+
+  if (roll < weights.short) {
+    return 'short';
+  }
+
+  if (roll < weights.short + weights.medium) {
+    return 'medium';
+  }
+
+  return 'long';
 }
 
 export function pickWord(
   level: number,
-  activeWords: Set<string>,
+  blockedWords: Set<string>,
   random: () => number,
 ): string {
-  const bucket = pickBucket(level);
+  const bucket = pickBucket(level, random);
   const pool = clampBucket(bucket);
 
   if (pool.length === 0) {
@@ -60,7 +85,14 @@ export function pickWord(
 
   for (let attempts = 0; attempts < 20; attempts += 1) {
     const candidate = pool[Math.floor(random() * pool.length)];
-    if (!activeWords.has(candidate)) {
+    if (!blockedWords.has(candidate)) {
+      return candidate;
+    }
+  }
+
+  for (let attempts = 0; attempts < 40; attempts += 1) {
+    const candidate = WORD_LIST[Math.floor(random() * WORD_LIST.length)];
+    if (candidate && !blockedWords.has(candidate)) {
       return candidate;
     }
   }

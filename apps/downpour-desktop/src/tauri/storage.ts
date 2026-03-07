@@ -12,16 +12,13 @@ import {
   saveRecordCommand,
   setBestWpmCommand,
 } from './commands';
+import { isTauriRuntime } from './runtime';
 
 const SNAPSHOT_KEY = 'downpour.local.snapshot';
 
 interface LocalSnapshot {
   bestWpm: number;
   records: GameRecord[];
-}
-
-function isTauriRuntime(): boolean {
-  return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 }
 
 function readLocalSnapshot(): LocalSnapshot {

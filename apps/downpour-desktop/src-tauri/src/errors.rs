@@ -16,4 +16,10 @@ pub enum AppError {
 
     #[error("Path resolution failed: {0}")]
     Path(String),
+
+    #[error("Engine state failed: {0}")]
+    State(String),
+
+    #[error("Resource not found: {0}")]
+    NotFound(String),
 }
