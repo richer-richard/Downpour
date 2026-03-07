@@ -1,0 +1,108 @@
+import type {
+  DifficultyMode,
+  GameRecord,
+  GameRecordInput,
+  GameSettings,
+  GraphicsQuality,
+  PersistedSnapshot,
+} from './types';
+
+function isString(value: unknown): value is string {
+  return typeof value === 'string';
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+function isDifficulty(value: unknown): value is DifficultyMode {
+  return value === 'normal' || value === 'hard';
+}
+
+function isGraphicsQuality(value: unknown): value is GraphicsQuality {
+  return value === 'high' || value === 'low';
+}
+
+export function isGameRecord(value: unknown): value is GameRecord {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const record = value as GameRecord;
+  return (
+    isString(record.id) &&
+    isString(record.timestampIso) &&
+    isFiniteNumber(record.durationSeconds) &&
+    isFiniteNumber(record.score) &&
+    isFiniteNumber(record.accuracy) &&
+    isFiniteNumber(record.sessionBestWpm) &&
+    isFiniteNumber(record.averageWpm) &&
+    isFiniteNumber(record.levelReached) &&
+    isFiniteNumber(record.mistakes) &&
+    isFiniteNumber(record.misses) &&
+    isDifficulty(record.mode)
+  );
+}
+
+export function assertGameRecord(value: unknown): GameRecord {
+  if (!isGameRecord(value)) {
+    throw new Error('Invalid GameRecord payload.');
+  }
+  return value;
+}
+
+export function isGameRecordArray(value: unknown): value is GameRecord[] {
+  return Array.isArray(value) && value.every(isGameRecord);
+}
+
+export function assertGameRecordArray(value: unknown): GameRecord[] {
+  if (!isGameRecordArray(value)) {
+    throw new Error('Invalid GameRecord[] payload.');
+  }
+  return value;
+}
+
+export function isGameRecordInput(value: unknown): value is GameRecordInput {
+  return isGameRecord(value);
+}
+
+export function isGameSettings(value: unknown): value is GameSettings {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const settings = value as GameSettings;
+  return (
+    typeof settings.reducedMotion === 'boolean' &&
+    isGraphicsQuality(settings.graphicsQuality) &&
+    isDifficulty(settings.difficulty) &&
+    typeof settings.soundEnabled === 'boolean'
+  );
+}
+
+export function isPersistedSnapshot(value: unknown): value is PersistedSnapshot {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const snapshot = value as PersistedSnapshot;
+  return isFiniteNumber(snapshot.bestWpm) && isGameRecordArray(snapshot.records);
+}
+
+export function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value));
+}
+
+export function sanitizeRecordInput(input: GameRecordInput): GameRecordInput {
+  return {
+    ...input,
+    durationSeconds: Math.max(0, input.durationSeconds),
+    score: Math.max(0, Math.round(input.score)),
+    accuracy: clamp01(input.accuracy),
+    sessionBestWpm: Math.max(0, input.sessionBestWpm),
+    averageWpm: Math.max(0, input.averageWpm),
+    levelReached: Math.max(1, Math.round(input.levelReached)),
+    mistakes: Math.max(0, Math.round(input.mistakes)),
+    misses: Math.max(0, Math.round(input.misses)),
+  };
+}

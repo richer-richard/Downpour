@@ -1,0 +1,19 @@
+node_modules
+.pnpm-store
+.DS_Store
+*.log
+
+# Build outputs
+dist
+coverage
+*.tsbuildinfo
+
+# Tauri / Rust
+apps/downpour-desktop/src-tauri/target
+
+# Vite
+apps/downpour-desktop/.vite
+
+# IDE
+.vscode
+.idea
