@@ -7,14 +7,16 @@ import { SortHeader } from '../components/SortHeader';
 interface RecordsScreenProps {
   records: GameRecord[];
   loading: boolean;
-  onRefresh: () => void;
-  onReset: () => void;
+  onRefresh: () => Promise<void>;
+  onReset: () => Promise<void>;
   onBack: () => void;
 }
 
 export function RecordsScreen({ records, loading, onRefresh, onReset, onBack }: RecordsScreenProps) {
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [direction, setDirection] = useState<SortDirection>('desc');
+  const [confirmingReset, setConfirmingReset] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   const sorted = useMemo(() => sortRecords(records, sortKey, direction), [direction, records, sortKey]);
 
@@ -28,10 +30,24 @@ export function RecordsScreen({ records, loading, onRefresh, onReset, onBack }: 
     setDirection(key === 'date' ? 'desc' : 'desc');
   };
 
-  const onConfirmReset = (): void => {
-    const confirmed = window.confirm('Reset all records and best WPM?');
-    if (confirmed) {
-      onReset();
+  const onBeginReset = (): void => {
+    setConfirmingReset(true);
+  };
+
+  const onCancelReset = (): void => {
+    if (!resetting) {
+      setConfirmingReset(false);
+    }
+  };
+
+  const onConfirmReset = async (): Promise<void> => {
+    setResetting(true);
+
+    try {
+      await onReset();
+      setConfirmingReset(false);
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -41,11 +57,32 @@ export function RecordsScreen({ records, loading, onRefresh, onReset, onBack }: 
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h1 className="font-display text-3xl uppercase tracking-[0.18em] text-cyan-100">Records</h1>
           <div className="flex flex-wrap gap-2">
-            <NeonButton onClick={onRefresh}>Refresh</NeonButton>
-            <NeonButton onClick={onConfirmReset}>Reset</NeonButton>
-            <NeonButton onClick={onBack}>Back</NeonButton>
+            <NeonButton onClick={() => void onRefresh()} type="button">Refresh</NeonButton>
+            <NeonButton onClick={onBeginReset} type="button">Reset</NeonButton>
+            <NeonButton onClick={onBack} type="button">Back</NeonButton>
           </div>
         </div>
+
+        {confirmingReset ? (
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-300/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+            <span>Delete all saved records and reset best WPM to zero?</span>
+            <div className="flex flex-wrap gap-2">
+              <NeonButton
+                className="border-red-300/50 bg-red-400/15 text-red-100 hover:border-red-200 hover:bg-red-400/25"
+                disabled={resetting}
+                onClick={() => {
+                  void onConfirmReset();
+                }}
+                type="button"
+              >
+                {resetting ? 'Resetting...' : 'Confirm Reset'}
+              </NeonButton>
+              <NeonButton disabled={resetting} onClick={onCancelReset} type="button">
+                Cancel
+              </NeonButton>
+            </div>
+          </div>
+        ) : null}
 
         {loading ? <p className="py-8 text-cyan-100/70">Loading records...</p> : null}
 

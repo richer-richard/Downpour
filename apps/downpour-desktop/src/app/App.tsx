@@ -127,13 +127,17 @@ export function App() {
   }, []);
 
   const onResetRecords = useCallback(async () => {
+    setRecordsLoading(true);
     try {
       await resetAllRecords();
-      setRecords([]);
-      setGlobalBestWpm(0);
+      const [best, clearedRecords] = await Promise.all([loadBestWpm(), loadRecords()]);
+      setRecords(clearedRecords);
+      setGlobalBestWpm(best);
       setRuntimeError(null);
     } catch (error) {
       setRuntimeError(toErrorMessage(error, 'Failed to reset records.'));
+    } finally {
+      setRecordsLoading(false);
     }
   }, []);
 
@@ -226,12 +230,10 @@ export function App() {
         <RecordsScreen
           records={records}
           loading={recordsLoading}
-          onRefresh={() => {
-            void refreshRecords();
+          onRefresh={async () => {
+            await refreshRecords();
           }}
-          onReset={() => {
-            void onResetRecords();
-          }}
+          onReset={onResetRecords}
           onBack={onBackToStart}
         />
       );

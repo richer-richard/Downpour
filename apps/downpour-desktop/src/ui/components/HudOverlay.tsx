@@ -16,9 +16,9 @@ function asNumber(value: number): string {
 
 export function HudOverlay({ hud, quality }: HudOverlayProps) {
   return (
-    <div className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-between p-4 sm:p-6">
-      <div className="glass-panel w-full rounded-lg p-3 text-cyan-100 sm:w-[420px]">
-        <div className="mb-2 grid grid-cols-2 gap-x-4 gap-y-1 font-display text-xs uppercase tracking-[0.18em] sm:grid-cols-3">
+    <div className="pointer-events-none absolute inset-0 z-20">
+      <div className="glass-panel absolute bottom-20 right-4 w-[min(24rem,calc(100vw-2rem))] rounded-lg p-3 text-cyan-100 sm:bottom-24 sm:right-6 sm:w-[24rem]">
+        <div className="mb-2 grid grid-cols-2 gap-x-4 gap-y-1 font-display text-xs uppercase tracking-[0.16em]">
           <span>Score: {hud.score}</span>
           <span>Level: {hud.level}</span>
           <span>Combo: x{(1 + Math.min(hud.combo, 20) * 0.05).toFixed(2)}</span>
@@ -31,7 +31,7 @@ export function HudOverlay({ hud, quality }: HudOverlayProps) {
         <WaterlineMeter waterLevel={hud.waterLevel} lives={hud.lives} />
       </div>
 
-      <div className="self-end rounded-md border border-cyan-200/20 bg-slate-950/35 px-3 py-1 text-xs uppercase tracking-[0.18em] text-cyan-100/70">
+      <div className="absolute right-4 top-4 rounded-md border border-cyan-200/20 bg-slate-950/35 px-3 py-1 text-xs uppercase tracking-[0.18em] text-cyan-100/70 sm:right-6 sm:top-6">
         ESC to pause
       </div>
     </div>

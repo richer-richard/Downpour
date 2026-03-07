@@ -27,7 +27,7 @@ export function GameScreen({ settings, globalBestWpm, onRunEnd, onBackToStart }:
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-[#02050a]">
-      <div className="absolute left-3 top-3 z-30">
+      <div className="absolute left-4 top-4 z-30 sm:left-6 sm:top-6">
         <NeonButton
           className="pointer-events-auto px-3 py-1 text-[11px] tracking-[0.18em]"
           onClick={onBackToStart}
