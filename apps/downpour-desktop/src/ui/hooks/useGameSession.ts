@@ -11,7 +11,7 @@ import { CanvasRenderer } from '../../engine/canvasRenderer';
 import { GameLoop } from '../../engine/gameLoop';
 import { PerformanceProfile } from '../../engine/performanceProfile';
 import { AudioEngine } from '../../game/audio';
-import { GameController } from '../../game/gameController';
+import type { GameController } from '../../game/gameController';
 import {
   createGameSessionCommand,
   destroyGameSessionCommand,
@@ -230,84 +230,99 @@ export function useGameSession(options: UseGameSessionOptions): UseGameSessionRe
     };
 
     if (!isTauriRuntime()) {
-      const controller = new GameController({ settings, globalBestWpm });
-      controllerRef.current = controller;
-      setHud(controller.getHudSnapshot());
+      let loop: GameLoop | null = null;
+      let onWindowBlur: (() => void) | null = null;
+      let onVisibilityChange: (() => void) | null = null;
 
-      let hudTick = 0;
-      const loop = new GameLoop({
-        fixedStepSeconds: 1 / 60,
-        maxSubSteps: 5,
-        update: (dtSeconds) => {
-          controller.update(dtSeconds);
-          hudTick += dtSeconds;
-
-          if (hudTick >= 0.08) {
-            hudTick = 0;
-            setHud(controller.getHudSnapshot());
-          }
-
-          if (!ended && controller.isGameOver()) {
-            ended = true;
-            setHud(controller.getHudSnapshot());
-            loop.stop();
-            onRunEnd(controller.buildEndSummary());
-          }
-        },
-        render: (_alpha, frameMs) => {
-          const sampledQuality = profile.sampleFrame(frameMs);
-          if (sampledQuality !== renderer.getQuality()) {
-            renderer.setQuality(sampledQuality);
-            setEffectiveQuality(sampledQuality);
-          }
-
-          const impacts = controller.consumeImpacts();
-          for (const impact of impacts) {
-            if (impact.type === 'miss') {
-              audio.playMiss();
-            } else {
-              audio.playSuccess();
-            }
-          }
-
-          renderer.render({
-            snapshot: controller.getRenderSnapshot(),
-            impacts,
-            frameMs,
-            quality: {
-              quality: sampledQuality,
-              reducedMotion: settings.reducedMotion,
-            },
-          });
-        },
-      });
-
-      const onWindowBlur = (): void => {
-        if (controller.isGameOver() || controller.isPaused()) {
+      void (async () => {
+        const { GameController } = await import('../../game/gameController');
+        if (destroyed) {
           return;
         }
 
-        controller.pause();
-        setPaused(true);
-        pausedRef.current = true;
-        audio.suspend();
-      };
+        const controller = new GameController({ settings, globalBestWpm });
+        controllerRef.current = controller;
+        setHud(controller.getHudSnapshot());
 
-      const onVisibilityChange = (): void => {
-        if (document.visibilityState === 'hidden') {
-          onWindowBlur();
-        }
-      };
+        let hudTick = 0;
+        loop = new GameLoop({
+          fixedStepSeconds: 1 / 60,
+          maxSubSteps: 5,
+          update: (dtSeconds) => {
+            controller.update(dtSeconds);
+            hudTick += dtSeconds;
 
-      window.addEventListener('blur', onWindowBlur);
-      document.addEventListener('visibilitychange', onVisibilityChange);
-      loop.start();
+            if (hudTick >= 0.08) {
+              hudTick = 0;
+              setHud(controller.getHudSnapshot());
+            }
+
+            if (!ended && controller.isGameOver()) {
+              ended = true;
+              setHud(controller.getHudSnapshot());
+              loop?.stop();
+              onRunEnd(controller.buildEndSummary());
+            }
+          },
+          render: (_alpha, frameMs) => {
+            const sampledQuality = profile.sampleFrame(frameMs);
+            if (sampledQuality !== renderer.getQuality()) {
+              renderer.setQuality(sampledQuality);
+              setEffectiveQuality(sampledQuality);
+            }
+
+            const impacts = controller.consumeImpacts();
+            for (const impact of impacts) {
+              if (impact.type === 'miss') {
+                audio.playMiss();
+              } else {
+                audio.playSuccess();
+              }
+            }
+
+            renderer.render({
+              snapshot: controller.getRenderSnapshot(),
+              impacts,
+              frameMs,
+              quality: {
+                quality: sampledQuality,
+                reducedMotion: settings.reducedMotion,
+              },
+            });
+          },
+        });
+
+        onWindowBlur = (): void => {
+          if (controller.isGameOver() || controller.isPaused()) {
+            return;
+          }
+
+          controller.pause();
+          setPaused(true);
+          pausedRef.current = true;
+          audio.suspend();
+        };
+
+        onVisibilityChange = (): void => {
+          if (document.visibilityState === 'hidden') {
+            onWindowBlur?.();
+          }
+        };
+
+        window.addEventListener('blur', onWindowBlur);
+        document.addEventListener('visibilitychange', onVisibilityChange);
+        loop.start();
+      })();
 
       return () => {
         destroyed = true;
-        loop.stop();
-        window.removeEventListener('blur', onWindowBlur);
-        document.removeEventListener('visibilitychange', onVisibilityChange);
+        loop?.stop();
+        if (onWindowBlur) {
+          window.removeEventListener('blur', onWindowBlur);
+        }
+        if (onVisibilityChange) {
+          document.removeEventListener('visibilitychange', onVisibilityChange);
+        }
         renderer.destroy();
         audio.destroy();
         controllerRef.current = null;

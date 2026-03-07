@@ -7,7 +7,8 @@
     "dev": "pnpm --filter downpour-desktop tauri dev",
     "lint": "pnpm --filter ./apps/* --filter ./packages/* -r run lint",
     "typecheck": "pnpm --filter ./apps/* --filter ./packages/* -r run typecheck",
-    "build": "pnpm --filter downpour-desktop tauri build"
+    "build": "pnpm --filter downpour-desktop tauri build",
+    "update:wordlist": "node scripts/update-wordlists.mjs"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.46.3",

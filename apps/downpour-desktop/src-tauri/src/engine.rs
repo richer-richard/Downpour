@@ -15,360 +15,29 @@ const GROUND_BASE_Y: f64 = 0.84;
 const WATERLINE_RISE_RANGE: f64 = 0.14;
 const LEVEL_UP_SECONDS: f64 = 15.0;
 const LEVEL_UP_WORDS: u32 = 7;
-const SPAWN_INTERVAL_MIN: f64 = 0.24;
-const FALL_SPEED_MIN: f64 = 0.12;
+const SPAWN_INTERVAL_MIN: f64 = 0.28;
+const FALL_SPEED_MIN: f64 = 0.10;
 const NORMAL_LIVES: u32 = 5;
 const HARD_LIVES: u32 = 3;
-const WPM_ACTIVE_WINDOW_SECONDS: f64 = 0.9;
+const CURRENT_WPM_WINDOW_SECONDS: f64 = 8.0;
+const PEAK_WPM_MIN_SECONDS: f64 = 1.5;
 const RECENT_WORD_MEMORY: usize = 18;
 const MAX_CONCURRENT_NORMAL: u32 = 14;
 const MAX_CONCURRENT_HARD: u32 = 16;
 
+const STARTER_WORDS_RAW: &str = include_str!("../../src/assets/wordlists/starter.txt");
+const COMMON_WORDS_RAW: &str = include_str!("../../src/assets/wordlists/scowl-common.txt");
+const EXTENDED_WORDS_RAW: &str = include_str!("../../src/assets/wordlists/scowl-extended.txt");
+
+static STARTER_WORDS: LazyLock<Vec<String>> = LazyLock::new(|| parse_word_list(STARTER_WORDS_RAW, 3));
+static COMMON_WORDS: LazyLock<Vec<String>> = LazyLock::new(|| parse_word_list(COMMON_WORDS_RAW, 4));
+static EXTENDED_WORDS: LazyLock<Vec<String>> = LazyLock::new(|| parse_word_list(EXTENDED_WORDS_RAW, 4));
+static EXTENDED_ONLY_WORDS: LazyLock<Vec<String>> = LazyLock::new(build_extended_only_words);
 static WORD_LIST: LazyLock<Vec<String>> = LazyLock::new(build_word_list);
-static SHORT_WORDS: LazyLock<Vec<String>> = LazyLock::new(|| {
-    WORD_LIST
-        .iter()
-        .filter(|word| (3..=4).contains(&word.len()))
-        .cloned()
-        .collect()
-});
-static MEDIUM_WORDS: LazyLock<Vec<String>> = LazyLock::new(|| {
-    WORD_LIST
-        .iter()
-        .filter(|word| (5..=7).contains(&word.len()))
-        .cloned()
-        .collect()
-});
-static LONG_WORDS: LazyLock<Vec<String>> = LazyLock::new(|| {
-    WORD_LIST
-        .iter()
-        .filter(|word| (8..=12).contains(&word.len()))
-        .cloned()
-        .collect()
-});
-
-const CORE_WORDS: &[&str] = &[
-    "rain",
-    "storm",
-    "typing",
-    "neon",
-    "shadow",
-    "window",
-    "street",
-    "signal",
-    "rocket",
-    "glimmer",
-    "memory",
-    "thread",
-    "rhythm",
-    "moment",
-    "focus",
-    "vector",
-    "ripple",
-    "cascade",
-    "anchor",
-    "current",
-    "charge",
-    "static",
-    "silver",
-    "carbon",
-    "ember",
-    "echo",
-    "flare",
-    "lumen",
-    "socket",
-    "cipher",
-    "matrix",
-    "binary",
-    "vertex",
-    "quantum",
-    "clock",
-    "horizon",
-    "tempo",
-    "velocity",
-    "pulse",
-    "signal",
-    "gloss",
-    "bridge",
-    "planet",
-    "mercury",
-    "saturn",
-    "galaxy",
-    "jupiter",
-    "comet",
-    "meteor",
-    "planet",
-    "future",
-    "urban",
-    "alley",
-    "district",
-    "engine",
-    "device",
-    "module",
-    "portal",
-    "dynamic",
-    "method",
-    "factor",
-    "status",
-    "module",
-    "syntax",
-    "shader",
-    "render",
-    "canvas",
-    "kernel",
-    "packet",
-    "stream",
-    "target",
-    "vector",
-    "ranger",
-    "walker",
-    "breaker",
-    "mirror",
-    "frozen",
-    "copper",
-    "magnet",
-    "harbor",
-    "lamps",
-    "mosaic",
-    "harvest",
-    "thunder",
-    "raindrop",
-    "letter",
-    "forest",
-    "winter",
-    "summer",
-    "autumn",
-    "spring",
-    "breeze",
-    "gust",
-    "cloud",
-    "vapor",
-    "glacier",
-    "ocean",
-    "delta",
-    "coast",
-    "harvest",
-    "meadow",
-    "lighthouse",
-    "arcade",
-    "circuit",
-    "satellite",
-    "project",
-    "monitor",
-    "insight",
-    "uplink",
-    "network",
-    "forecast",
-    "drizzle",
-    "downpour",
-    "fountain",
-    "meridian",
-    "signaler",
-    "postcard",
-    "journey",
-    "archive",
-    "navigator",
-    "lattice",
-    "polar",
-    "fusion",
-    "nova",
-    "stellar",
-    "drifter",
-    "voyager",
-    "humming",
-    "silence",
-    "ceramic",
-    "granite",
-    "granular",
-    "fabric",
-    "canvas",
-    "pixel",
-    "outline",
-    "origin",
-    "planetary",
-    "stormlight",
-    "threshold",
-    "waterline",
-    "grounded",
-    "lantern",
-    "streetcar",
-    "midnight",
-    "railing",
-    "smolder",
-    "hollow",
-    "silent",
-    "kinetic",
-    "upriver",
-    "bottleneck",
-    "downtown",
-    "crosswind",
-    "cathedral",
-    "warehouse",
-    "turnstile",
-    "backlight",
-    "riverstone",
-    "semaphore",
-    "luminance",
-    "waterfront",
-    "rainproof",
-    "nightfall",
-    "afterglow",
-    "windward",
-    "updraft",
-    "starboard",
-    "terminal",
-    "framework",
-    "operand",
-    "runtime",
-    "compile",
-    "deltaflow",
-    "streaming",
-    "controller",
-    "response",
-    "payload",
-    "snapshot",
-    "glowline",
-    "subtle",
-    "elegant",
-    "realism",
-    "splash",
-    "rivulet",
-    "puddle",
-    "spectrum",
-    "density",
-    "clarity",
-    "precision",
-    "balance",
-    "momentum",
-    "terrain",
-    "polished",
-    "gesture",
-    "mechanic",
-    "session",
-    "record",
-    "history",
-    "timing",
-    "average",
-    "minimum",
-    "maximum",
-    "quality",
-    "setting",
-    "profile",
-    "trigger",
-    "camera",
-    "layer",
-    "forefront",
-    "backdrop",
-    "vignette",
-    "ambient",
-    "reflect",
-    "shimmer",
-    "nocturne",
-    "crosswalk",
-    "traffic",
-    "avenue",
-    "districts",
-    "aluminum",
-    "warehouse",
-    "generator",
-    "operator",
-    "cobblestone",
-    "quicksilver",
-    "frequency",
-    "transient",
-    "infinite",
-    "boundary",
-    "northern",
-    "southern",
-    "eastern",
-    "western",
-    "junction",
-    "assembly",
-    "artifact",
-    "fidelity",
-    "gradient",
-    "harmonic",
-    "resonance",
-    "overcast",
-    "rainfall",
-    "drifting",
-    "lively",
-    "threshold",
-    "airborne",
-    "soundscape",
-    "luminous",
-    "dispatch",
-    "firewatch",
-    "watchtower",
-    "dockyard",
-    "boardwalk",
-    "shoreline",
-    "synergy",
-    "workflow",
-    "signalpath",
-    "telemetry",
-    "interface",
-    "overlay",
-    "keyframe",
-    "compositor",
-    "persistence",
-    "database",
-    "transaction",
-    "rollback",
-    "migration",
-    "cursor",
-    "surface",
-    "hologram",
-    "moonlit",
-    "riverbank",
-    "undertow",
-    "stability",
-    "immersive",
-    "playfield",
-];
-
-const PREFIXES: &[&str] = &[
-    "ra", "ne", "cy", "lu", "br", "st", "mo", "di", "ca", "tr", "fl", "sp", "gl", "sh",
-    "cl", "wi", "th", "pr", "ch", "fr", "bl", "gr", "vo", "qu", "ha", "me", "co", "po",
-    "si", "ni",
-];
-
-const ROOTS: &[&str] = &[
-    "nex",
-    "rift",
-    "line",
-    "drop",
-    "shade",
-    "light",
-    "trace",
-    "pulse",
-    "frame",
-    "crest",
-    "stream",
-    "point",
-    "stone",
-    "field",
-    "gale",
-    "flux",
-    "spark",
-    "clock",
-    "grid",
-    "shore",
-    "drift",
-    "wave",
-    "forge",
-    "scope",
-    "rail",
-    "plane",
-    "mark",
-    "phase",
-    "tide",
-    "crest",
-];
-
-const SUFFIXES: &[&str] = &[
-    "er", "ing", "ed", "ion", "al", "ory", "ance", "ist", "ive", "ure", "ent", "oid",
-];
+static EASY_WORDS: LazyLock<Vec<String>> = LazyLock::new(build_easy_words);
+static STEADY_WORDS: LazyLock<Vec<String>> = LazyLock::new(build_steady_words);
+static TRICKY_WORDS: LazyLock<Vec<String>> = LazyLock::new(build_tricky_words);
+static STORM_WORDS: LazyLock<Vec<String>> = LazyLock::new(build_storm_words);
 
 #[allow(dead_code)]
 #[derive(Clone, Debug, Deserialize)]
@@ -467,8 +136,6 @@ struct ActiveWord {
     x: f64,
     y: f64,
     speed: f64,
-    typed_count: u32,
-    spawn_tick: u64,
     mistake_flash: f64,
 }
 
@@ -504,7 +171,8 @@ struct GameSession {
     spawn_tick_counter: u64,
     session_best_wpm: f64,
     wpm_active_seconds: f64,
-    typing_window_remaining: f64,
+    typing_segment_active: bool,
+    recent_correct_events: Vec<f64>,
     global_best_wpm: f64,
     paused: bool,
     game_over: bool,
@@ -619,7 +287,8 @@ impl GameSession {
             spawn_tick_counter: 0,
             session_best_wpm: 0.0,
             wpm_active_seconds: 0.0,
-            typing_window_remaining: 0.0,
+            typing_segment_active: false,
+            recent_correct_events: Vec::new(),
             global_best_wpm: global_best_wpm.max(0.0),
             paused: false,
             game_over: false,
@@ -660,13 +329,12 @@ impl GameSession {
         self.spawn_words(dt);
         self.update_words(dt);
 
-        if self.typing_window_remaining > 0.0 {
-            let active_dt = dt.min(self.typing_window_remaining);
-            self.wpm_active_seconds += active_dt;
-            self.typing_window_remaining = (self.typing_window_remaining - dt).max(0.0);
+        if self.typing_segment_active {
+            self.wpm_active_seconds += dt;
+            self.trim_recent_correct_events();
         }
 
-        let current_wpm = compute_wpm(self.correct_chars, self.wpm_active_seconds);
+        let current_wpm = rolling_wpm(self.wpm_active_seconds, &self.recent_correct_events);
         self.session_best_wpm = self.session_best_wpm.max(current_wpm);
     }
 
@@ -699,7 +367,7 @@ impl GameSession {
             lives: self.lives,
             water_level: self.water_level,
             accuracy: compute_accuracy(self.correct_chars, self.total_typed_chars),
-            current_wpm: compute_wpm(self.correct_chars, self.wpm_active_seconds),
+            current_wpm: rolling_wpm(self.wpm_active_seconds, &self.recent_correct_events),
             session_best_wpm: self.session_best_wpm,
             global_best_wpm: self.global_best_wpm,
             is_paused: self.paused,
@@ -708,6 +376,15 @@ impl GameSession {
     }
 
     fn render_snapshot(&self) -> SessionRenderSnapshot {
+        let matching_word_ids: HashSet<&str> = if self.typed_buffer.is_empty() {
+            HashSet::new()
+        } else {
+            self.matching_word_indices(&self.typed_buffer)
+                .into_iter()
+                .map(|index| self.words[index].id.as_str())
+                .collect()
+        };
+
         SessionRenderSnapshot {
             elapsed_seconds: self.elapsed_seconds,
             water_level: self.water_level,
@@ -721,7 +398,7 @@ impl GameSession {
                     text: word.text.clone(),
                     x: word.x,
                     y: word.y,
-                    typed_count: word.typed_count,
+                    typed_count: self.render_typed_count(word, &matching_word_ids),
                     speed: word.speed,
                     mistake_flash: word.mistake_flash,
                 })
@@ -767,20 +444,28 @@ impl GameSession {
         }
 
         self.total_typed_chars += 1;
-        self.refresh_typing_window();
+        let proposal = format!("{}{}", self.typed_buffer, key);
+        let matches = self.matching_word_indices(&proposal);
 
-        if let Some(target_id) = self.target_word_id.clone() {
-            if let Some(index) = self.words.iter().position(|word| word.id == target_id) {
-                self.apply_character_to_word(index, key);
-                return;
-            }
+        if matches.is_empty() {
+            self.register_mistake(self.target_word_id.clone());
+            return;
         }
 
-        if let Some(index) = self.pick_target_index(&self.typed_buffer, key) {
-            self.target_word_id = Some(self.words[index].id.clone());
-            self.apply_character_to_word(index, key);
+        self.correct_chars += 1;
+        self.typed_buffer = proposal;
+        self.typing_segment_active = true;
+        self.record_correct_char();
+
+        if matches.len() == 1 {
+            let word_id = self.words[matches[0]].id.clone();
+            self.target_word_id = Some(word_id.clone());
+
+            if self.words[matches[0]].text.len() == self.typed_buffer.len() {
+                self.handle_word_clear(&word_id);
+            }
         } else {
-            self.register_mistake(None);
+            self.target_word_id = None;
         }
     }
 
@@ -789,72 +474,15 @@ impl GameSession {
             return;
         }
 
-        let Some(target_id) = self.target_word_id.clone() else {
-            return;
-        };
-        let Some(index) = self.words.iter().position(|word| word.id == target_id) else {
-            return;
-        };
-        if self.words[index].typed_count == 0 {
+        if self.typed_buffer.is_empty() {
             return;
         }
 
-        self.refresh_typing_window();
-        self.words[index].typed_count -= 1;
-        let typed_count = self.words[index].typed_count as usize;
-        self.typed_buffer = self.words[index].text[..typed_count].to_string();
+        self.typed_buffer.pop();
+        self.reconcile_buffer_after_word_change();
 
-        if self.words[index].typed_count == 0 {
-            self.target_word_id = None;
-            self.typed_buffer.clear();
-        }
-    }
-
-    fn pick_target_index(&self, current_buffer: &str, next_char: char) -> Option<usize> {
-        let mut best: Option<(usize, f64, u64)> = None;
-        let proposal = format!("{}{}", current_buffer, next_char);
-
-        for (index, word) in self.words.iter().enumerate() {
-            let typed_prefix = &word.text[..word.typed_count as usize];
-            if typed_prefix != current_buffer || !word.text.starts_with(&proposal) {
-                continue;
-            }
-
-            match best {
-                None => best = Some((index, word.y, word.spawn_tick)),
-                Some((_, best_y, best_spawn_tick)) => {
-                    if word.y > best_y || ((word.y - best_y).abs() < f64::EPSILON && word.spawn_tick < best_spawn_tick)
-                    {
-                        best = Some((index, word.y, word.spawn_tick));
-                    }
-                }
-            }
-        }
-
-        best.map(|(index, _, _)| index)
-    }
-
-    fn apply_character_to_word(&mut self, word_index: usize, character: char) {
-        let expected = self.words[word_index]
-            .text
-            .chars()
-            .nth(self.words[word_index].typed_count as usize)
-            .unwrap_or_default();
-
-        if character != expected {
-            let word_id = self.words[word_index].id.clone();
-            self.register_mistake(Some(word_id));
-            return;
-        }
-
-        self.words[word_index].typed_count += 1;
-        self.correct_chars += 1;
-        let typed_count = self.words[word_index].typed_count as usize;
-        self.typed_buffer = self.words[word_index].text[..typed_count].to_string();
-
-        if self.words[word_index].typed_count as usize >= self.words[word_index].text.len() {
-            let word_id = self.words[word_index].id.clone();
-            self.handle_word_clear(&word_id);
+        if self.typed_buffer.is_empty() {
+            self.typing_segment_active = false;
         }
     }
 
@@ -888,10 +516,9 @@ impl GameSession {
         });
 
         self.words.remove(index);
-        if self.target_word_id.as_deref() == Some(word_id) {
-            self.target_word_id = None;
-            self.typed_buffer.clear();
-        }
+        self.target_word_id = None;
+        self.typed_buffer.clear();
+        self.typing_segment_active = false;
     }
 
     fn progress_difficulty(&mut self) {
@@ -931,8 +558,6 @@ impl GameSession {
                 x,
                 y,
                 speed,
-                typed_count: 0,
-                spawn_tick: self.spawn_tick_counter,
                 mistake_flash: 0.0,
             });
         }
@@ -964,9 +589,8 @@ impl GameSession {
         };
         let word = self.words.remove(index);
 
-        if self.target_word_id.as_deref() == Some(word_id) {
-            self.target_word_id = None;
-            self.typed_buffer.clear();
+        if !self.typed_buffer.is_empty() {
+            self.reconcile_buffer_after_word_change();
         }
 
         self.misses += 1;
@@ -1005,8 +629,66 @@ impl GameSession {
         }
     }
 
-    fn refresh_typing_window(&mut self) {
-        self.typing_window_remaining = WPM_ACTIVE_WINDOW_SECONDS;
+    fn matching_word_indices(&self, proposal: &str) -> Vec<usize> {
+        if proposal.is_empty() {
+            return Vec::new();
+        }
+
+        self.words
+            .iter()
+            .enumerate()
+            .filter_map(|(index, word)| word.text.starts_with(proposal).then_some(index))
+            .collect()
+    }
+
+    fn render_typed_count(&self, word: &ActiveWord, matching_word_ids: &HashSet<&str>) -> u32 {
+        if self.typed_buffer.is_empty() {
+            return 0;
+        }
+
+        if self.target_word_id.as_deref() == Some(word.id.as_str())
+            || (self.target_word_id.is_none() && matching_word_ids.contains(word.id.as_str()))
+        {
+            self.typed_buffer.len() as u32
+        } else {
+            0
+        }
+    }
+
+    fn reconcile_buffer_after_word_change(&mut self) {
+        if self.typed_buffer.is_empty() {
+            self.target_word_id = None;
+            return;
+        }
+
+        let matches = self.matching_word_indices(&self.typed_buffer);
+        if matches.is_empty() {
+            self.typed_buffer.clear();
+            self.target_word_id = None;
+            self.typing_segment_active = false;
+        } else if matches.len() == 1 {
+            self.target_word_id = Some(self.words[matches[0]].id.clone());
+        } else {
+            self.target_word_id = None;
+        }
+    }
+
+    fn record_correct_char(&mut self) {
+        self.recent_correct_events.push(self.wpm_active_seconds);
+        self.trim_recent_correct_events();
+        let current_wpm = rolling_wpm(self.wpm_active_seconds, &self.recent_correct_events);
+        self.session_best_wpm = self.session_best_wpm.max(current_wpm);
+    }
+
+    fn trim_recent_correct_events(&mut self) {
+        let cutoff = (self.wpm_active_seconds - CURRENT_WPM_WINDOW_SECONDS).max(0.0);
+        while let Some(first) = self.recent_correct_events.first() {
+            if *first < cutoff {
+                self.recent_correct_events.remove(0);
+            } else {
+                break;
+            }
+        }
     }
 }
 
@@ -1070,8 +752,8 @@ fn get_difficulty_profile(level: u32, difficulty: &str) -> DifficultyProfile {
     };
 
     DifficultyProfile {
-        spawn_interval_seconds: clamp((1.35 - safe_level * 0.075) / spawn_multiplier, SPAWN_INTERVAL_MIN, 1.35),
-        fall_speed_normalized: clamp((0.125 + safe_level * 0.018) * speed_multiplier, FALL_SPEED_MIN, 0.64),
+        spawn_interval_seconds: clamp((1.55 - safe_level * 0.07) / spawn_multiplier, SPAWN_INTERVAL_MIN, 1.55),
+        fall_speed_normalized: clamp((0.098 + safe_level * 0.015) * speed_multiplier, FALL_SPEED_MIN, 0.58),
         max_concurrent_words: (3.0 + safe_level * 0.7).floor() as usize,
     }
     .with_cap(max_concurrent_words as usize)
@@ -1084,34 +766,40 @@ impl DifficultyProfile {
     }
 }
 
-fn bucket_weights(level: u32) -> (f64, f64, f64) {
+fn bucket_weights(level: u32) -> (f64, f64, f64, f64) {
     if level <= 2 {
-        (0.88, 0.12, 0.0)
+        (0.96, 0.04, 0.0, 0.0)
     } else if level <= 4 {
-        (0.62, 0.38, 0.0)
+        (0.74, 0.22, 0.04, 0.0)
     } else if level <= 7 {
-        (0.24, 0.64, 0.12)
+        (0.34, 0.42, 0.2, 0.04)
     } else if level <= 10 {
-        (0.08, 0.54, 0.38)
+        (0.12, 0.28, 0.36, 0.24)
     } else {
-        (0.04, 0.28, 0.68)
+        (0.05, 0.15, 0.36, 0.44)
     }
 }
 
 fn pick_bucket(level: u32, random: &mut SimpleRng) -> &'static [String] {
-    let (short_weight, medium_weight, _) = bucket_weights(level);
+    let (easy_weight, steady_weight, tricky_weight, _) = bucket_weights(level);
     let roll = random.next_f64();
-    if roll < short_weight {
-        SHORT_WORDS.as_slice()
-    } else if roll < short_weight + medium_weight {
-        MEDIUM_WORDS.as_slice()
+    if roll < easy_weight {
+        EASY_WORDS.as_slice()
+    } else if roll < easy_weight + steady_weight {
+        STEADY_WORDS.as_slice()
+    } else if roll < easy_weight + steady_weight + tricky_weight {
+        TRICKY_WORDS.as_slice()
     } else {
-        LONG_WORDS.as_slice()
+        STORM_WORDS.as_slice()
     }
 }
 
 fn pick_word(level: u32, blocked_words: &HashSet<String>, random: &mut SimpleRng) -> String {
     let pool = pick_bucket(level, random);
+
+    if pool.is_empty() {
+        return WORD_LIST[(random.next_f64() * WORD_LIST.len() as f64).floor() as usize].clone();
+    }
 
     for _ in 0..20 {
         let candidate = pool[(random.next_f64() * pool.len() as f64).floor() as usize].clone();
@@ -1132,36 +820,159 @@ fn pick_word(level: u32, blocked_words: &HashSet<String>, random: &mut SimpleRng
 }
 
 fn build_word_list() -> Vec<String> {
-    let mut words = BTreeSet::new();
-    for word in CORE_WORDS {
-        words.insert(word.to_lowercase());
-    }
+    merge_unique_word_lists(&[
+        STARTER_WORDS.as_slice(),
+        COMMON_WORDS.as_slice(),
+        EXTENDED_WORDS.as_slice(),
+    ])
+}
 
-    for prefix in PREFIXES {
-        for root in ROOTS {
-            let combined = format!("{}{}", prefix, root);
-            if is_valid_word(&combined) {
-                words.insert(combined);
-            }
+fn build_extended_only_words() -> Vec<String> {
+    let common_words: HashSet<&str> = COMMON_WORDS.iter().map(String::as_str).collect();
+    EXTENDED_WORDS
+        .iter()
+        .filter(|word| !common_words.contains(word.as_str()))
+        .cloned()
+        .collect()
+}
 
-            for suffix in SUFFIXES {
-                let extended = format!("{}{}{}", prefix, root, suffix);
-                if is_valid_word(&extended) {
-                    words.insert(extended);
-                }
+fn build_easy_words() -> Vec<String> {
+    let common_words: Vec<String> = COMMON_WORDS
+        .iter()
+        .filter(|word| word.len() <= 6 && word_difficulty_score(word) <= 6)
+        .cloned()
+        .collect();
+
+    merge_unique_word_lists(&[STARTER_WORDS.as_slice(), common_words.as_slice()])
+}
+
+fn build_steady_words() -> Vec<String> {
+    let primary: Vec<String> = COMMON_WORDS
+        .iter()
+        .filter(|word| {
+            let score = word_difficulty_score(word);
+            (6..=8).contains(&score)
+        })
+        .cloned()
+        .collect();
+    let support: Vec<String> = COMMON_WORDS
+        .iter()
+        .filter(|word| (6..=8).contains(&word.len()))
+        .cloned()
+        .collect();
+
+    merge_unique_word_lists(&[primary.as_slice(), support.as_slice()])
+}
+
+fn build_tricky_words() -> Vec<String> {
+    let common_words: Vec<String> = COMMON_WORDS
+        .iter()
+        .filter(|word| {
+            let score = word_difficulty_score(word);
+            (8..=10).contains(&score)
+        })
+        .cloned()
+        .collect();
+    let extended_words: Vec<String> = EXTENDED_ONLY_WORDS
+        .iter()
+        .filter(|word| {
+            let score = word_difficulty_score(word);
+            (8..=11).contains(&score) && word.len() >= 6
+        })
+        .cloned()
+        .collect();
+
+    merge_unique_word_lists(&[common_words.as_slice(), extended_words.as_slice()])
+}
+
+fn build_storm_words() -> Vec<String> {
+    let common_words: Vec<String> = COMMON_WORDS
+        .iter()
+        .filter(|word| word_difficulty_score(word) >= 10 || word.len() >= 9)
+        .cloned()
+        .collect();
+    let extended_words: Vec<String> = EXTENDED_ONLY_WORDS
+        .iter()
+        .filter(|word| word_difficulty_score(word) >= 10 || word.len() >= 8)
+        .cloned()
+        .collect();
+
+    merge_unique_word_lists(&[common_words.as_slice(), extended_words.as_slice()])
+}
+
+fn merge_unique_word_lists(groups: &[&[String]]) -> Vec<String> {
+    let mut words = Vec::new();
+    let mut seen = HashSet::new();
+
+    for group in groups {
+        for word in *group {
+            if seen.insert(word.clone()) {
+                words.push(word.clone());
             }
         }
     }
 
-    let mut cleaned: Vec<String> = words.into_iter().collect();
-    cleaned.truncate(3200);
-    assert!(cleaned.len() >= 2000, "word list generation produced fewer than 2000 words");
-    cleaned
+    words
 }
 
-fn is_valid_word(word: &str) -> bool {
+fn parse_word_list(raw: &str, minimum_length: usize) -> Vec<String> {
+    let mut words = BTreeSet::new();
+
+    for line in raw.lines() {
+        let word = line.trim().to_ascii_lowercase();
+        if is_valid_word(&word, minimum_length) {
+            words.insert(word);
+        }
+    }
+
+    words.into_iter().collect()
+}
+
+fn is_valid_word(word: &str, minimum_length: usize) -> bool {
     let length = word.len();
-    (3..=12).contains(&length) && word.chars().all(|character| character.is_ascii_lowercase())
+    (minimum_length..=12).contains(&length)
+        && word.chars().all(|character| character.is_ascii_lowercase())
+}
+
+fn word_difficulty_score(word: &str) -> usize {
+    let mut score = word.len();
+    for pattern in ["th", "sh", "ch", "ph", "ck", "qu", "str", "ght", "tion", "ough", "scr", "spl", "chr"] {
+        if word.contains(pattern) {
+            score += 2;
+        }
+    }
+
+    for character in ['x', 'z', 'v', 'k', 'j', 'q'] {
+        if word.contains(character) {
+            score += 1;
+        }
+    }
+
+    score
+}
+
+fn rolling_wpm(active_seconds: f64, recent_correct_events: &[f64]) -> f64 {
+    if recent_correct_events.is_empty() {
+        return 0.0;
+    }
+
+    let cutoff = (active_seconds - CURRENT_WPM_WINDOW_SECONDS).max(0.0);
+    let first_recent = recent_correct_events
+        .iter()
+        .copied()
+        .find(|timestamp| *timestamp >= cutoff)
+        .unwrap_or(active_seconds);
+    let char_count = recent_correct_events
+        .iter()
+        .filter(|timestamp| **timestamp >= cutoff)
+        .count() as u32;
+
+    if char_count == 0 {
+        return 0.0;
+    }
+
+    let span_seconds = clamp(active_seconds - first_recent, PEAK_WPM_MIN_SECONDS, CURRENT_WPM_WINDOW_SECONDS);
+    compute_wpm(char_count, span_seconds)
 }
 
 #[cfg(test)]
@@ -1179,7 +990,7 @@ mod tests {
 
     #[test]
     fn word_list_is_large_enough() {
-        assert!(WORD_LIST.len() >= 2000);
+        assert!(WORD_LIST.len() >= 3000);
     }
 
     #[test]
@@ -1189,14 +1000,15 @@ mod tests {
 
         assert!(late.2 > early.2);
         assert!(late.0 < early.0);
+        assert!(late.3 > early.3);
     }
 
     #[test]
     fn current_wpm_freezes_when_idle() {
         let mut session = GameSession::new(sample_settings(), 0.0);
-        session.correct_chars = 25;
         session.wpm_active_seconds = 10.0;
-        session.typing_window_remaining = 0.0;
+        session.recent_correct_events = vec![6.0, 6.4, 6.8, 7.2, 7.6, 8.0, 8.4, 8.8, 9.2, 9.6];
+        session.typing_segment_active = false;
 
         let before = session.hud_snapshot().current_wpm;
         session.update(0.5);
@@ -1213,5 +1025,38 @@ mod tests {
 
         let picked = pick_word(1, &blocked, &mut session.random);
         assert_ne!(picked, "echo");
+    }
+
+    #[test]
+    fn ambiguous_prefix_stays_unlocked_until_unique() {
+        let mut session = GameSession::new(sample_settings(), 0.0);
+        session.words = vec![
+            ActiveWord {
+                id: "a".to_string(),
+                text: "cable".to_string(),
+                x: 0.3,
+                y: 0.2,
+                speed: 0.1,
+                mistake_flash: 0.0,
+            },
+            ActiveWord {
+                id: "b".to_string(),
+                text: "cinder".to_string(),
+                x: 0.7,
+                y: 0.3,
+                speed: 0.1,
+                mistake_flash: 0.0,
+            },
+        ];
+
+        session.handle_printable_input('c');
+        assert!(session.target_word_id.is_none());
+
+        let snapshot = session.render_snapshot();
+        let highlighted = snapshot.words.iter().filter(|word| word.typed_count == 1).count();
+        assert_eq!(highlighted, 2);
+
+        session.handle_printable_input('i');
+        assert_eq!(session.target_word_id.as_deref(), Some("b"));
     }
 }

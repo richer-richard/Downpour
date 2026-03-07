@@ -42,6 +42,16 @@ Bootstrap the macOS toolchain and workspace automatically:
 ./install.sh
 ```
 
+Refresh the built-in word corpus from SCOWL:
+
+```bash
+pnpm update:wordlist
+```
+
+This downloads SCOWL `en_US.txt` and `en_US-large.txt`, filters them into
+gameplay-safe lowercase words, and updates
+`apps/downpour-desktop/src/assets/wordlists/`.
+
 ## Development (Tauri desktop app)
 
 ```bash
@@ -124,3 +134,9 @@ cargo test --manifest-path apps/downpour-desktop/src-tauri/Cargo.toml
   - `xcode-select -p`
 - If the app cannot open WebView resources, ensure Vite port `1420` is available.
 - If you run frontend only (`pnpm --filter downpour-desktop dev`), Tauri commands fall back to browser `localStorage` stubs.
+
+## Word Source
+
+- Updater script: `scripts/update-wordlists.mjs`
+- Upstream source: SCOWL generated word lists from `https://github.com/en-wl/wordlist-diff`
+- License notice copied into `apps/downpour-desktop/src/assets/wordlists/SCOWL-Copyright.txt`

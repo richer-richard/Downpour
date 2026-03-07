@@ -18,4 +18,11 @@ describe('difficulty profile', () => {
     expect(hard.fallSpeedNormalized).toBeGreaterThan(normal.fallSpeedNormalized);
     expect(hard.spawnIntervalSeconds).toBeLessThan(normal.spawnIntervalSeconds);
   });
+
+  it('starts gently in normal mode', () => {
+    const normal = getDifficultyProfile(1, 'normal');
+
+    expect(normal.spawnIntervalSeconds).toBeGreaterThan(1.4);
+    expect(normal.fallSpeedNormalized).toBeLessThan(0.12);
+  });
 });

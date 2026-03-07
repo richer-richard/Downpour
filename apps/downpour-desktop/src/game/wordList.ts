@@ -1,322 +1,51 @@
-const CORE_WORDS = [
-  'rain',
-  'storm',
-  'typing',
-  'neon',
-  'shadow',
-  'window',
-  'street',
-  'signal',
-  'rocket',
-  'glimmer',
-  'memory',
-  'thread',
-  'rhythm',
-  'moment',
-  'focus',
-  'vector',
-  'ripple',
-  'cascade',
-  'anchor',
-  'current',
-  'charge',
-  'static',
-  'silver',
-  'carbon',
-  'ember',
-  'echo',
-  'flare',
-  'lumen',
-  'socket',
-  'cipher',
-  'matrix',
-  'binary',
-  'vertex',
-  'quantum',
-  'clock',
-  'horizon',
-  'tempo',
-  'velocity',
-  'pulse',
-  'signal',
-  'gloss',
-  'bridge',
-  'planet',
-  'mercury',
-  'saturn',
-  'galaxy',
-  'jupiter',
-  'comet',
-  'meteor',
-  'planet',
-  'future',
-  'urban',
-  'alley',
-  'district',
-  'engine',
-  'device',
-  'module',
-  'portal',
-  'dynamic',
-  'method',
-  'factor',
-  'status',
-  'module',
-  'syntax',
-  'shader',
-  'render',
-  'canvas',
-  'kernel',
-  'packet',
-  'stream',
-  'target',
-  'vector',
-  'ranger',
-  'walker',
-  'breaker',
-  'mirror',
-  'frozen',
-  'copper',
-  'magnet',
-  'harbor',
-  'lamps',
-  'mosaic',
-  'harvest',
-  'thunder',
-  'raindrop',
-  'letter',
-  'forest',
-  'winter',
-  'summer',
-  'autumn',
-  'spring',
-  'breeze',
-  'gust',
-  'cloud',
-  'vapor',
-  'glacier',
-  'ocean',
-  'delta',
-  'coast',
-  'harvest',
-  'meadow',
-  'lighthouse',
-  'arcade',
-  'circuit',
-  'satellite',
-  'project',
-  'monitor',
-  'insight',
-  'uplink',
-  'network',
-  'forecast',
-  'drizzle',
-  'downpour',
-  'fountain',
-  'meridian',
-  'signaler',
-  'postcard',
-  'journey',
-  'archive',
-  'navigator',
-  'lattice',
-  'polar',
-  'fusion',
-  'nova',
-  'stellar',
-  'drifter',
-  'voyager',
-  'humming',
-  'silence',
-  'ceramic',
-  'granite',
-  'granular',
-  'fabric',
-  'canvas',
-  'pixel',
-  'outline',
-  'origin',
-  'planetary',
-  'stormlight',
-  'threshold',
-  'waterline',
-  'grounded',
-  'lantern',
-  'streetcar',
-  'midnight',
-  'railing',
-  'smolder',
-  'hollow',
-  'silent',
-  'kinetic',
-  'upriver',
-  'bottleneck',
-  'downtown',
-  'crosswind',
-  'cathedral',
-  'warehouse',
-  'turnstile',
-  'backlight',
-  'riverstone',
-  'semaphore',
-  'luminance',
-  'waterfront',
-  'rainproof',
-  'nightfall',
-  'afterglow',
-  'windward',
-  'updraft',
-  'starboard',
-  'terminal',
-  'framework',
-  'operand',
-  'runtime',
-  'compile',
-  'deltaflow',
-  'streaming',
-  'controller',
-  'response',
-  'payload',
-  'snapshot',
-  'glowline',
-  'subtle',
-  'elegant',
-  'realism',
-  'splash',
-  'rivulet',
-  'puddle',
-  'spectrum',
-  'density',
-  'clarity',
-  'precision',
-  'balance',
-  'momentum',
-  'terrain',
-  'polished',
-  'gesture',
-  'mechanic',
-  'session',
-  'record',
-  'history',
-  'timing',
-  'average',
-  'minimum',
-  'maximum',
-  'quality',
-  'setting',
-  'profile',
-  'trigger',
-  'camera',
-  'layer',
-  'forefront',
-  'backdrop',
-  'vignette',
-  'ambient',
-  'reflect',
-  'shimmer',
-  'nocturne',
-  'crosswalk',
-  'traffic',
-  'avenue',
-  'districts',
-  'aluminum',
-  'warehouse',
-  'generator',
-  'operator',
-  'cobblestone',
-  'quicksilver',
-  'frequency',
-  'transient',
-  'infinite',
-  'boundary',
-  'northern',
-  'southern',
-  'eastern',
-  'western',
-  'junction',
-  'assembly',
-  'artifact',
-  'fidelity',
-  'gradient',
-  'harmonic',
-  'resonance',
-  'overcast',
-  'rainfall',
-  'drifting',
-  'lively',
-  'threshold',
-  'airborne',
-  'soundscape',
-  'luminous',
-  'dispatch',
-  'firewatch',
-  'watchtower',
-  'dockyard',
-  'boardwalk',
-  'shoreline',
-  'synergy',
-  'workflow',
-  'signalpath',
-  'telemetry',
-  'interface',
-  'overlay',
-  'keyframe',
-  'compositor',
-  'persistence',
-  'database',
-  'transaction',
-  'rollback',
-  'migration',
-  'cursor',
-  'surface',
-  'hologram',
-  'moonlit',
-  'riverbank',
-  'undertow',
-  'stability',
-  'immersive',
-  'playfield',
-];
+import commonRaw from '../assets/wordlists/scowl-common.txt?raw';
+import extendedRaw from '../assets/wordlists/scowl-extended.txt?raw';
+import starterRaw from '../assets/wordlists/starter.txt?raw';
 
-const PREFIXES = [
-  'ra', 'ne', 'cy', 'lu', 'br', 'st', 'mo', 'di', 'ca', 'tr', 'fl', 'sp', 'gl', 'sh', 'cl',
-  'wi', 'th', 'pr', 'ch', 'fr', 'bl', 'gr', 'vo', 'qu', 'ha', 'me', 'co', 'po', 'si', 'ni',
-];
+function parseWordList(raw: string, minimumLength: number): string[] {
+  const unique = new Set<string>();
 
-const ROOTS = [
-  'nex', 'rift', 'line', 'drop', 'shade', 'light', 'trace', 'pulse', 'frame', 'crest',
-  'stream', 'point', 'stone', 'field', 'gale', 'flux', 'spark', 'clock', 'grid', 'shore',
-  'drift', 'wave', 'forge', 'scope', 'rail', 'plane', 'mark', 'phase', 'tide', 'crest',
-];
+  for (const line of raw.split(/\r?\n/)) {
+    const word = line.trim().toLowerCase();
+    if (!word) {
+      continue;
+    }
 
-const SUFFIXES = [
-  'er', 'ing', 'ed', 'ion', 'al', 'ory', 'ance', 'ist', 'ive', 'ure', 'ent', 'oid',
-];
+    if (!/^[a-z]+$/.test(word)) {
+      continue;
+    }
 
-function buildWordList(): string[] {
-  const words = new Set<string>(CORE_WORDS.map((word) => word.toLowerCase()));
+    if (word.length < minimumLength || word.length > 12) {
+      continue;
+    }
 
-  for (const prefix of PREFIXES) {
-    for (const root of ROOTS) {
-      words.add((prefix + root).toLowerCase());
-      for (const suffix of SUFFIXES) {
-        words.add((prefix + root + suffix).toLowerCase());
-      }
+    unique.add(word);
+  }
+
+  return [...unique].sort();
+}
+
+function mergeUnique(...groups: readonly string[][]): string[] {
+  const unique = new Set<string>();
+
+  for (const group of groups) {
+    for (const word of group) {
+      unique.add(word);
     }
   }
 
-  const cleaned = [...words].filter(
-    (word) => word.length >= 3 && word.length <= 12 && /^[a-z]+$/.test(word),
-  );
-
-  cleaned.sort();
-  const trimmed = cleaned.slice(0, 3200);
-
-  if (trimmed.length < 2000) {
-    throw new Error('Word list generation produced fewer than 2000 words.');
-  }
-
-  return trimmed;
+  return [...unique];
 }
 
-export const WORD_LIST = buildWordList();
+export const STARTER_WORDS = parseWordList(starterRaw, 3);
+export const COMMON_WORDS = parseWordList(commonRaw, 4);
+export const EXTENDED_WORDS = parseWordList(extendedRaw, 4);
+export const WORD_LIST = mergeUnique(STARTER_WORDS, COMMON_WORDS, EXTENDED_WORDS);
+
+if (COMMON_WORDS.length < 50000) {
+  throw new Error('Common word list did not load correctly.');
+}
+
+if (EXTENDED_WORDS.length < COMMON_WORDS.length) {
+  throw new Error('Extended word list should be at least as large as the common word list.');
+}

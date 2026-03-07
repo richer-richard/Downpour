@@ -9,8 +9,8 @@ export const HARD_LIVES = 3;
 export const LEVEL_UP_SECONDS = 15;
 export const LEVEL_UP_WORDS = 7;
 
-export const SPAWN_INTERVAL_MIN = 0.24;
-export const FALL_SPEED_MIN = 0.12;
+export const SPAWN_INTERVAL_MIN = 0.28;
+export const FALL_SPEED_MIN = 0.1;
 
 export const BASE_WORD_FONT_SIZE = 28;
 export const WPM_ACTIVE_WINDOW_SECONDS = 0.9;
