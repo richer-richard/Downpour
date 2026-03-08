@@ -1,10 +1,13 @@
 import type { DifficultyMode } from '@downpour/shared';
 
 export const GROUND_BASE_Y = 0.84;
-export const WATERLINE_RISE_RANGE = 0.14;
+export const WATERLINE_TOP_Y = 0.14;
+export const WATERLINE_RISE_RANGE = GROUND_BASE_Y - WATERLINE_TOP_Y;
 
-export const NORMAL_LIVES = 5;
-export const HARD_LIVES = 3;
+export const WATERLINE_CLEAR_DROP = 0.01;
+export const WATERLINE_MISS_RISE_BASE = 0.03;
+export const WATERLINE_MISS_RISE_PER_LETTER = 0.0018;
+export const WATERLINE_MISS_RISE_PER_LEVEL = 0.001;
 
 export const LEVEL_UP_SECONDS = 15;
 export const LEVEL_UP_WORDS = 7;
@@ -21,17 +24,14 @@ export const MODE_MODIFIER: Record<
   {
     speedMultiplier: number;
     spawnMultiplier: number;
-    lives: number;
   }
 > = {
   normal: {
     speedMultiplier: 1,
     spawnMultiplier: 1,
-    lives: NORMAL_LIVES,
   },
   hard: {
     speedMultiplier: 1.2,
     spawnMultiplier: 1.15,
-    lives: HARD_LIVES,
   },
 };

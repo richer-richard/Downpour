@@ -10,19 +10,19 @@ export class RippleField {
 
   private damping = 0.985;
 
-  private waterLevel = 0;
+  private waterlineY = 0.84;
 
   public setQuality(quality: 'high' | 'low'): void {
     this.damping = quality === 'high' ? 0.985 : 0.97;
   }
 
-  public setWaterLevel(level: number): void {
-    this.waterLevel = Math.max(0, Math.min(1, level));
+  public setWaterline(level: number): void {
+    this.waterlineY = Math.max(0, Math.min(1, level));
   }
 
   public addImpulse(normalizedX: number, strength: number, radius: number): void {
     const centerX = Math.floor(normalizedX * (FIELD_WIDTH - 1));
-    const centerY = Math.floor((0.22 + this.waterLevel * 0.6) * (FIELD_HEIGHT - 1));
+    const centerY = Math.floor(this.waterlineY * (FIELD_HEIGHT - 1));
 
     for (let y = Math.max(1, centerY - radius); y < Math.min(FIELD_HEIGHT - 1, centerY + radius); y += 1) {
       for (let x = Math.max(1, centerX - radius); x < Math.min(FIELD_WIDTH - 1, centerX + radius); x += 1) {
@@ -56,8 +56,8 @@ export class RippleField {
   }
 
   public render(ctx: CanvasRenderingContext2D, width: number, height: number): void {
-    const baseHeight = Math.floor(height * (0.15 + this.waterLevel * 0.24));
-    const waterTop = height - baseHeight;
+    const waterTop = Math.floor(height * this.waterlineY);
+    const baseHeight = Math.max(0, height - waterTop);
 
     const fill = ctx.createLinearGradient(0, waterTop, 0, height);
     fill.addColorStop(0, 'rgba(42, 153, 207, 0.24)');
@@ -69,7 +69,7 @@ export class RippleField {
     ctx.lineWidth = 1.4;
     ctx.beginPath();
 
-    const sampleY = Math.floor(FIELD_HEIGHT * (0.2 + this.waterLevel * 0.62));
+    const sampleY = Math.max(0, Math.min(FIELD_HEIGHT - 1, Math.floor(FIELD_HEIGHT * this.waterlineY)));
     for (let x = 0; x < width; x += 2) {
       const fx = Math.floor((x / width) * (FIELD_WIDTH - 1));
       const heightSample = this.curr[sampleY * FIELD_WIDTH + fx] ?? 0;

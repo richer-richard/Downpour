@@ -34,7 +34,7 @@ export class CityLayer {
     this.rebuild();
   }
 
-  public render(ctx: CanvasRenderingContext2D, elapsedSeconds: number, wind: number, waterLevel: number): void {
+  public render(ctx: CanvasRenderingContext2D, elapsedSeconds: number, wind: number, groundLine: number): void {
     const shift = Math.sin(elapsedSeconds * 0.05) * 10 + wind * 12;
     ctx.clearRect(0, 0, this.width, this.height);
     ctx.drawImage(this.cacheCanvas, shift, 0);
@@ -47,8 +47,8 @@ export class CityLayer {
     ctx.fillStyle = haze;
     ctx.fillRect(0, 0, this.width, this.height);
 
-    const reflectionHeight = this.height * (0.18 + waterLevel * 0.12);
-    const reflectionTop = this.height - reflectionHeight;
+    const reflectionTop = Math.max(0, Math.min(this.height, this.height * groundLine));
+    const reflectionHeight = this.height - reflectionTop;
 
     const reflectGradient = ctx.createLinearGradient(0, reflectionTop, 0, this.height);
     reflectGradient.addColorStop(0, 'rgba(91, 204, 255, 0.08)');

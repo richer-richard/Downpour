@@ -28,7 +28,7 @@ export function HudOverlay({ hud, quality }: HudOverlayProps) {
           <span>Best WPM: {asNumber(hud.globalBestWpm)}</span>
           <span>Mode: {quality.toUpperCase()}</span>
         </div>
-        <WaterlineMeter waterLevel={hud.waterLevel} lives={hud.lives} />
+        <WaterlineMeter waterLevel={hud.waterLevel} />
       </div>
 
       <div className="absolute right-4 top-4 rounded-md border border-cyan-200/20 bg-slate-950/35 px-3 py-1 text-xs uppercase tracking-[0.18em] text-cyan-100/70 sm:right-6 sm:top-6">

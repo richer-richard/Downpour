@@ -80,7 +80,7 @@ export class CanvasRenderer {
   public render(frame: RenderFrame): void {
     this.resizeToDisplaySize();
 
-    this.cityLayer.render(this.bgCtx, frame.snapshot.elapsedSeconds, frame.snapshot.wind, frame.snapshot.waterLevel);
+    this.cityLayer.render(this.bgCtx, frame.snapshot.elapsedSeconds, frame.snapshot.wind, frame.snapshot.groundLine);
 
     this.fxCtx.clearRect(0, 0, this.width, this.height);
 
@@ -92,7 +92,7 @@ export class CanvasRenderer {
       frame.quality.reducedMotion,
     );
 
-    this.rippleField.setWaterLevel(frame.snapshot.waterLevel);
+    this.rippleField.setWaterline(frame.snapshot.groundLine);
 
     for (const impact of frame.impacts) {
       const radius = impact.type === 'miss' ? 6 : 3;
@@ -118,8 +118,10 @@ export class CanvasRenderer {
     this.wordRenderer.render(
       this.wordCtx,
       frame.snapshot.words,
+      frame.impacts,
       this.width,
       this.height,
+      frame.frameMs / 1000,
       frame.quality.reducedMotion,
     );
   }

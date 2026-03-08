@@ -12,13 +12,16 @@ use serde::{Deserialize, Serialize};
 use crate::errors::AppError;
 
 const GROUND_BASE_Y: f64 = 0.84;
-const WATERLINE_RISE_RANGE: f64 = 0.14;
+const WATERLINE_TOP_Y: f64 = 0.14;
+const WATERLINE_RISE_RANGE: f64 = GROUND_BASE_Y - WATERLINE_TOP_Y;
+const WATERLINE_CLEAR_DROP: f64 = 0.01;
+const WATERLINE_MISS_RISE_BASE: f64 = 0.03;
+const WATERLINE_MISS_RISE_PER_LETTER: f64 = 0.0018;
+const WATERLINE_MISS_RISE_PER_LEVEL: f64 = 0.001;
 const LEVEL_UP_SECONDS: f64 = 15.0;
 const LEVEL_UP_WORDS: u32 = 7;
 const SPAWN_INTERVAL_MIN: f64 = 0.28;
 const FALL_SPEED_MIN: f64 = 0.10;
-const NORMAL_LIVES: u32 = 5;
-const HARD_LIVES: u32 = 3;
 const CURRENT_WPM_WINDOW_SECONDS: f64 = 8.0;
 const PEAK_WPM_MIN_SECONDS: f64 = 1.5;
 const RECENT_WORD_MEMORY: usize = 18;
@@ -252,12 +255,6 @@ impl EngineManager {
 
 impl GameSession {
     fn new(settings: GameSettings, global_best_wpm: f64) -> Self {
-        let lives = if settings.difficulty == "hard" {
-            HARD_LIVES
-        } else {
-            NORMAL_LIVES
-        };
-
         let seed = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .map(|duration| duration.as_nanos() as u64)
@@ -272,7 +269,7 @@ impl GameSession {
             level: 1,
             score: 0,
             combo: 0,
-            lives,
+            lives: 0,
             water_level: 0.0,
             cleared_since_level: 0,
             misses: 0,
@@ -507,7 +504,7 @@ impl GameSession {
         self.score += points;
         self.combo += 1;
         self.cleared_since_level += 1;
-        self.water_level = (self.water_level - 0.015).max(0.0);
+        self.water_level = (self.water_level - WATERLINE_CLEAR_DROP).max(0.0);
         self.pending_impacts.push(ImpactEvent {
             x: word.x,
             y: word.y,
@@ -595,19 +592,21 @@ impl GameSession {
 
         self.misses += 1;
         self.combo = 0;
-        self.lives = self.lives.saturating_sub(1);
 
-        let increment = 0.045 + word.text.len() as f64 * 0.003 + self.level as f64 * 0.0012;
+        let impact_y = self.ground_line();
+        let increment = WATERLINE_MISS_RISE_BASE
+            + word.text.len() as f64 * WATERLINE_MISS_RISE_PER_LETTER
+            + self.level as f64 * WATERLINE_MISS_RISE_PER_LEVEL;
         self.water_level = (self.water_level + increment).min(1.0);
 
         self.pending_impacts.push(ImpactEvent {
             x: word.x,
-            y: self.ground_line(),
+            y: impact_y,
             strength: 1.35 + word.text.len() as f64 * 0.04,
             r#type: "miss".to_string(),
         });
 
-        if self.lives == 0 || self.water_level >= 1.0 {
+        if self.water_level >= 1.0 {
             self.end_game();
         }
     }

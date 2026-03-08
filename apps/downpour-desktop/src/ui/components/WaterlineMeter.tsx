@@ -1,9 +1,8 @@
 interface WaterlineMeterProps {
   waterLevel: number;
-  lives: number;
 }
 
-export function WaterlineMeter({ waterLevel, lives }: WaterlineMeterProps) {
+export function WaterlineMeter({ waterLevel }: WaterlineMeterProps) {
   const clamped = Math.max(0, Math.min(1, waterLevel));
 
   return (
@@ -18,7 +17,7 @@ export function WaterlineMeter({ waterLevel, lives }: WaterlineMeterProps) {
           style={{ width: `${clamped * 100}%` }}
         />
       </div>
-      <div className="text-xs uppercase tracking-[0.2em] text-amber-200/85">Lives: {lives}</div>
+      <div className="text-xs uppercase tracking-[0.2em] text-amber-200/85">Words drown at the water surface</div>
     </div>
   );
 }

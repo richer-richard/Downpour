@@ -44,7 +44,7 @@ function createInitialHud(globalBestWpm: number): HudSnapshot {
     level: 1,
     score: 0,
     combo: 0,
-    lives: 5,
+    lives: 0,
     waterLevel: 0,
     accuracy: 0,
     currentWpm: 0,

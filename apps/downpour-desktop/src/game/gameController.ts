@@ -12,6 +12,10 @@ import {
   LEVEL_UP_WORDS,
   MODE_MODIFIER,
   RECENT_WORD_MEMORY,
+  WATERLINE_CLEAR_DROP,
+  WATERLINE_MISS_RISE_BASE,
+  WATERLINE_MISS_RISE_PER_LETTER,
+  WATERLINE_MISS_RISE_PER_LEVEL,
   WATERLINE_RISE_RANGE,
   WPM_ACTIVE_WINDOW_SECONDS,
 } from './constants';
@@ -122,7 +126,7 @@ export class GameController {
   constructor(options: GameControllerOptions) {
     this.settings = options.settings;
     this.globalBestWpm = options.globalBestWpm;
-    this.lives = MODE_MODIFIER[this.settings.difficulty].lives;
+    this.lives = 0;
     this.random = createRng(Date.now());
   }
 
@@ -375,19 +379,22 @@ export class GameController {
 
     this.misses += 1;
     this.combo = 0;
-    this.lives = Math.max(0, this.lives - 1);
 
-    const increment = 0.045 + word.text.length * 0.003 + this.level * 0.0012;
+    const impactY = this.groundLine;
+    const increment =
+      WATERLINE_MISS_RISE_BASE +
+      word.text.length * WATERLINE_MISS_RISE_PER_LETTER +
+      this.level * WATERLINE_MISS_RISE_PER_LEVEL;
     this.waterLevel = clamp(this.waterLevel + increment, 0, 1);
 
     this.pendingImpacts.push({
       x: word.x,
-      y: this.groundLine,
+      y: impactY,
       strength: 1.35 + word.text.length * 0.04,
       type: 'miss',
     });
 
-    if (this.lives <= 0 || this.waterLevel >= 1) {
+    if (this.waterLevel >= 1) {
       this.endGame();
     }
   }
@@ -424,7 +431,7 @@ export class GameController {
     this.combo += 1;
     this.clearedWords += 1;
     this.clearedSinceLevel += 1;
-    this.waterLevel = Math.max(0, this.waterLevel - 0.015);
+    this.waterLevel = Math.max(0, this.waterLevel - WATERLINE_CLEAR_DROP);
 
     this.pendingImpacts.push({
       x: word.x,
