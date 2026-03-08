@@ -8,7 +8,7 @@ mod paths;
 
 use db::Database;
 use engine::EngineManager;
-use tauri::Manager;
+use tauri::{webview::PageLoadEvent, Manager, WebviewWindowBuilder};
 
 pub struct AppState {
     db: Database,
@@ -26,9 +26,26 @@ pub fn run() {
                 engine: EngineManager::default(),
             });
 
-            if let Some(window) = app.get_webview_window("main") {
-                window.maximize()?;
-            }
+            let mut main_window_config = app
+                .config()
+                .app
+                .windows
+                .iter()
+                .find(|window| window.label == "main")
+                .cloned()
+                .expect("missing main window config");
+            main_window_config.maximized = false;
+            main_window_config.visible = false;
+
+            WebviewWindowBuilder::from_config(app.handle(), &main_window_config)?
+                .on_page_load(|window, payload| {
+                    if payload.event() == PageLoadEvent::Finished {
+                        let _ = window.maximize();
+                        let _ = window.show();
+                        let _ = window.set_focus();
+                    }
+                })
+                .build()?;
 
             Ok(())
         })

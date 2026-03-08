@@ -12,6 +12,7 @@
   "app": {
     "windows": [
       {
+        "create": false,
         "label": "main",
         "title": "Downpour",
         "width": 1280,
@@ -19,7 +20,8 @@
         "minWidth": 960,
         "minHeight": 640,
         "resizable": true,
-        "maximized": true,
+        "maximized": false,
+        "visible": false,
         "fullscreen": false
       }
     ],
