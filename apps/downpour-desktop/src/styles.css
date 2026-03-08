@@ -42,6 +42,83 @@ select {
   backdrop-filter: blur(8px);
 }
 
+.start-screen-ambient {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+.start-screen-ambient__wash,
+.start-screen-ambient__veil,
+.start-screen-ambient__layer {
+  position: absolute;
+}
+
+.start-screen-ambient__wash,
+.start-screen-ambient__veil {
+  inset: 0;
+}
+
+.start-screen-ambient__wash {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(24, 88, 126, 0.42), transparent 30%),
+    radial-gradient(circle at 82% 16%, rgba(255, 159, 67, 0.16), transparent 24%),
+    linear-gradient(180deg, rgba(1, 4, 9, 0.96) 0%, rgba(3, 16, 30, 0.7) 48%, rgba(5, 24, 42, 0.9) 100%);
+}
+
+.start-screen-ambient__layer {
+  inset: -24%;
+  background-repeat: no-repeat;
+  filter: blur(34px);
+  will-change: transform, opacity;
+}
+
+.start-screen-ambient__layer--primary {
+  background:
+    radial-gradient(circle at 22% 28%, rgba(110, 235, 255, 0.2), transparent 20%),
+    radial-gradient(circle at 74% 22%, rgba(255, 175, 95, 0.12), transparent 18%),
+    radial-gradient(circle at 50% 76%, rgba(22, 92, 138, 0.18), transparent 28%);
+  animation: ambient-float 18s ease-in-out infinite alternate;
+}
+
+.start-screen-ambient__layer--secondary {
+  background:
+    radial-gradient(circle at 30% 18%, rgba(31, 117, 163, 0.18), transparent 22%),
+    radial-gradient(circle at 78% 64%, rgba(90, 220, 255, 0.12), transparent 20%),
+    radial-gradient(circle at 14% 78%, rgba(8, 48, 76, 0.3), transparent 32%);
+  animation: ambient-float-reverse 22s ease-in-out infinite alternate;
+  opacity: 0.82;
+}
+
+.start-screen-ambient__veil {
+  background:
+    linear-gradient(150deg, transparent 0%, rgba(138, 226, 255, 0.05) 42%, transparent 74%),
+    linear-gradient(180deg, rgba(2, 8, 15, 0.04) 0%, transparent 100%);
+  mix-blend-mode: screen;
+}
+
+@keyframes ambient-float {
+  0% {
+    transform: translate3d(-2%, -3%, 0) scale(1);
+  }
+
+  100% {
+    transform: translate3d(3%, 4%, 0) scale(1.08);
+  }
+}
+
+@keyframes ambient-float-reverse {
+  0% {
+    transform: translate3d(4%, -2%, 0) scale(1.05);
+  }
+
+  100% {
+    transform: translate3d(-3%, 3%, 0) scale(1);
+  }
+}
+
 .neon-text {
   color: #bff8ff;
   text-shadow:

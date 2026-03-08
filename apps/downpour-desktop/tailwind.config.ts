@@ -18,15 +18,6 @@ export default {
       boxShadow: {
         neon: '0 0 16px rgba(125, 249, 255, 0.6)',
       },
-      animation: {
-        drizzle: 'drizzle 5s linear infinite',
-      },
-      keyframes: {
-        drizzle: {
-          '0%': { transform: 'translateY(-10%)' },
-          '100%': { transform: 'translateY(10%)' },
-        },
-      },
     },
   },
   plugins: [],

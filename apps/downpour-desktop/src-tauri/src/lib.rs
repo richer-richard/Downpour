@@ -25,6 +25,11 @@ pub fn run() {
                 db: database,
                 engine: EngineManager::default(),
             });
+
+            if let Some(window) = app.get_webview_window("main") {
+                window.maximize()?;
+            }
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

@@ -10,9 +10,11 @@ interface StartScreenProps {
 export function StartScreen({ bestWpm, onStart, onOpenRecords, onOpenSettings }: StartScreenProps) {
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-4">
-      <div className="absolute inset-0 opacity-80">
-        <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-slate-950 via-blue-950/40 to-transparent" />
-        <div className="absolute inset-0 animate-drizzle bg-[linear-gradient(150deg,transparent_0%,rgba(138,226,255,0.08)_45%,transparent_100%)]" />
+      <div aria-hidden="true" className="start-screen-ambient">
+        <div className="start-screen-ambient__wash" />
+        <div className="start-screen-ambient__layer start-screen-ambient__layer--primary" />
+        <div className="start-screen-ambient__layer start-screen-ambient__layer--secondary" />
+        <div className="start-screen-ambient__veil" />
       </div>
 
       <div className="glass-panel relative z-10 w-full max-w-2xl rounded-2xl p-8 text-center sm:p-10">
