@@ -47,6 +47,7 @@ describe('waterline fail state', () => {
   it('removes words when they touch the raised water surface', () => {
     const controller = makeController();
     (controller as any).waterLevel = 0.5;
+    (controller as any).targetWaterLevel = 0.5;
     const groundLine = controller.getRenderSnapshot().groundLine;
 
     (controller as any).words = [
@@ -66,5 +67,29 @@ describe('waterline fail state', () => {
 
     expect((controller as any).words).toHaveLength(0);
     expect(controller.consumeImpacts()[0]?.type).toBe('miss');
+  });
+
+  it('raises the waterline smoothly instead of jumping instantly', () => {
+    const controller = makeController();
+    const word = {
+      id: 'word-1',
+      text: 'storm',
+      x: 0.5,
+      y: controller.getRenderSnapshot().groundLine,
+      speed: 0.12,
+      typedCount: 0,
+      spawnTick: 1,
+      mistakeFlash: 0,
+    };
+
+    (controller as any).words = [word];
+    controller.update(0.016);
+
+    const immediateWaterLevel = controller.getHudSnapshot().waterLevel;
+    expect(immediateWaterLevel).toBeGreaterThan(0);
+    expect(immediateWaterLevel).toBeLessThan(0.04);
+
+    controller.update(0.4);
+    expect(controller.getHudSnapshot().waterLevel).toBeGreaterThan(immediateWaterLevel);
   });
 });

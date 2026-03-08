@@ -18,6 +18,8 @@ const WATERLINE_CLEAR_DROP: f64 = 0.01;
 const WATERLINE_MISS_RISE_BASE: f64 = 0.03;
 const WATERLINE_MISS_RISE_PER_LETTER: f64 = 0.0018;
 const WATERLINE_MISS_RISE_PER_LEVEL: f64 = 0.001;
+const WATERLINE_RISE_RESPONSE: f64 = 8.5;
+const WATERLINE_FALL_RESPONSE: f64 = 5.5;
 const LEVEL_UP_SECONDS: f64 = 15.0;
 const LEVEL_UP_WORDS: u32 = 7;
 const SPAWN_INTERVAL_MIN: f64 = 0.28;
@@ -161,6 +163,7 @@ struct GameSession {
     combo: u32,
     lives: u32,
     water_level: f64,
+    target_water_level: f64,
     cleared_since_level: u32,
     misses: u32,
     mistakes: u32,
@@ -271,6 +274,7 @@ impl GameSession {
             combo: 0,
             lives: 0,
             water_level: 0.0,
+            target_water_level: 0.0,
             cleared_since_level: 0,
             misses: 0,
             mistakes: 0,
@@ -325,6 +329,7 @@ impl GameSession {
         self.progress_difficulty();
         self.spawn_words(dt);
         self.update_words(dt);
+        self.update_waterline(dt);
 
         if self.typing_segment_active {
             self.wpm_active_seconds += dt;
@@ -504,7 +509,7 @@ impl GameSession {
         self.score += points;
         self.combo += 1;
         self.cleared_since_level += 1;
-        self.water_level = (self.water_level - WATERLINE_CLEAR_DROP).max(0.0);
+        self.target_water_level = (self.target_water_level - WATERLINE_CLEAR_DROP).max(0.0);
         self.pending_impacts.push(ImpactEvent {
             x: word.x,
             y: word.y,
@@ -597,7 +602,7 @@ impl GameSession {
         let increment = WATERLINE_MISS_RISE_BASE
             + word.text.len() as f64 * WATERLINE_MISS_RISE_PER_LETTER
             + self.level as f64 * WATERLINE_MISS_RISE_PER_LEVEL;
-        self.water_level = (self.water_level + increment).min(1.0);
+        self.target_water_level = (self.target_water_level + increment).min(1.0);
 
         self.pending_impacts.push(ImpactEvent {
             x: word.x,
@@ -606,14 +611,33 @@ impl GameSession {
             r#type: "miss".to_string(),
         });
 
-        if self.water_level >= 1.0 {
-            self.end_game();
-        }
     }
 
     fn end_game(&mut self) {
         self.paused = false;
         self.game_over = true;
+    }
+
+    fn update_waterline(&mut self, delta_seconds: f64) {
+        let target = clamp(self.target_water_level, 0.0, 1.0);
+        let response = if target > self.water_level {
+            WATERLINE_RISE_RESPONSE
+        } else {
+            WATERLINE_FALL_RESPONSE
+        };
+        let blend = 1.0 - (-response * delta_seconds).exp();
+
+        if (target - self.water_level).abs() <= 0.0005 {
+            self.water_level = target;
+        } else {
+            self.water_level += (target - self.water_level) * blend;
+        }
+
+        if self.water_level >= 0.999 {
+            self.water_level = 1.0;
+            self.target_water_level = 1.0;
+            self.end_game();
+        }
     }
 
     fn ground_line(&self) -> f64 {
@@ -1057,5 +1081,27 @@ mod tests {
 
         session.handle_printable_input('i');
         assert_eq!(session.target_word_id.as_deref(), Some("b"));
+    }
+
+    #[test]
+    fn waterline_rises_smoothly_after_miss() {
+        let mut session = GameSession::new(sample_settings(), 0.0);
+        let ground_line = session.ground_line();
+        session.words = vec![ActiveWord {
+            id: "a".to_string(),
+            text: "storm".to_string(),
+            x: 0.5,
+            y: ground_line + 0.002,
+            speed: 0.1,
+            mistake_flash: 0.0,
+        }];
+
+        session.update(0.016);
+        assert!(session.water_level > 0.0);
+        assert!(session.water_level < 0.04);
+
+        let immediate = session.water_level;
+        session.update(0.4);
+        assert!(session.water_level > immediate);
     }
 }

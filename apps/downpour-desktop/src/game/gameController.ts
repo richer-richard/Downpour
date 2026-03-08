@@ -10,12 +10,13 @@ import {
   GROUND_BASE_Y,
   LEVEL_UP_SECONDS,
   LEVEL_UP_WORDS,
-  MODE_MODIFIER,
   RECENT_WORD_MEMORY,
   WATERLINE_CLEAR_DROP,
+  WATERLINE_FALL_RESPONSE,
   WATERLINE_MISS_RISE_BASE,
   WATERLINE_MISS_RISE_PER_LETTER,
   WATERLINE_MISS_RISE_PER_LEVEL,
+  WATERLINE_RISE_RESPONSE,
   WATERLINE_RISE_RANGE,
   WPM_ACTIVE_WINDOW_SECONDS,
 } from './constants';
@@ -85,6 +86,8 @@ export class GameController {
 
   private waterLevel = 0;
 
+  private targetWaterLevel = 0;
+
   private clearedWords = 0;
 
   private clearedSinceLevel = 0;
@@ -147,6 +150,7 @@ export class GameController {
     this.progressDifficulty();
     this.spawnWords(dt);
     this.updateWords(dt);
+    this.updateWaterline(dt);
 
     if (this.typingWindowRemaining > 0) {
       const activeDt = Math.min(dt, this.typingWindowRemaining);
@@ -385,7 +389,7 @@ export class GameController {
       WATERLINE_MISS_RISE_BASE +
       word.text.length * WATERLINE_MISS_RISE_PER_LETTER +
       this.level * WATERLINE_MISS_RISE_PER_LEVEL;
-    this.waterLevel = clamp(this.waterLevel + increment, 0, 1);
+    this.targetWaterLevel = clamp(this.targetWaterLevel + increment, 0, 1);
 
     this.pendingImpacts.push({
       x: word.x,
@@ -394,9 +398,6 @@ export class GameController {
       type: 'miss',
     });
 
-    if (this.waterLevel >= 1) {
-      this.endGame();
-    }
   }
 
   private applyCharacterToWord(word: ActiveWord, character: string): void {
@@ -431,7 +432,7 @@ export class GameController {
     this.combo += 1;
     this.clearedWords += 1;
     this.clearedSinceLevel += 1;
-    this.waterLevel = Math.max(0, this.waterLevel - WATERLINE_CLEAR_DROP);
+    this.targetWaterLevel = Math.max(0, this.targetWaterLevel - WATERLINE_CLEAR_DROP);
 
     this.pendingImpacts.push({
       x: word.x,
@@ -451,6 +452,24 @@ export class GameController {
   private endGame(): void {
     this.paused = false;
     this.gameOver = true;
+  }
+
+  private updateWaterline(deltaSeconds: number): void {
+    const target = clamp(this.targetWaterLevel, 0, 1);
+    const response = target > this.waterLevel ? WATERLINE_RISE_RESPONSE : WATERLINE_FALL_RESPONSE;
+    const blend = 1 - Math.exp(-response * deltaSeconds);
+
+    if (Math.abs(target - this.waterLevel) <= 0.0005) {
+      this.waterLevel = target;
+    } else {
+      this.waterLevel += (target - this.waterLevel) * blend;
+    }
+
+    if (this.waterLevel >= 0.999) {
+      this.waterLevel = 1;
+      this.targetWaterLevel = 1;
+      this.endGame();
+    }
   }
 
   private rememberWord(word: string): void {

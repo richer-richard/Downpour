@@ -8,6 +8,8 @@ export const WATERLINE_CLEAR_DROP = 0.01;
 export const WATERLINE_MISS_RISE_BASE = 0.03;
 export const WATERLINE_MISS_RISE_PER_LETTER = 0.0018;
 export const WATERLINE_MISS_RISE_PER_LEVEL = 0.001;
+export const WATERLINE_RISE_RESPONSE = 8.5;
+export const WATERLINE_FALL_RESPONSE = 5.5;
 
 export const LEVEL_UP_SECONDS = 15;
 export const LEVEL_UP_WORDS = 7;
