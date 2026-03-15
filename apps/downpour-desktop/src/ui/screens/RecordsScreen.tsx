@@ -1,4 +1,4 @@
-import type { GameRecord, SortKey } from '@downpour/shared';
+import { formatDifficultyMode, type GameRecord, type SortKey } from '@downpour/shared';
 import { useMemo, useState } from 'react';
 import { sortRecords, type SortDirection } from '../../tauri/mappers';
 import { NeonButton } from '../components/NeonButton';
@@ -139,7 +139,7 @@ export function RecordsScreen({ records, loading, onRefresh, onReset, onBack }: 
                     <td className="px-3 py-2">{(record.accuracy * 100).toFixed(1)}%</td>
                     <td className="px-3 py-2">{record.durationSeconds.toFixed(1)}s</td>
                     <td className="px-3 py-2">{record.levelReached}</td>
-                    <td className="px-3 py-2 uppercase">{record.mode}</td>
+                    <td className="px-3 py-2">{formatDifficultyMode(record.mode)}</td>
                   </tr>
                 ))}
               </tbody>

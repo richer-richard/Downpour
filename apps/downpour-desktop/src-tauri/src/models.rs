@@ -68,8 +68,13 @@ impl GameRecordInput {
             ));
         }
 
-        if self.mode != "normal" && self.mode != "hard" {
-            return Err(AppError::Validation("mode must be normal or hard".to_string()));
+        if !matches!(
+            self.mode.as_str(),
+            "veryEasy" | "easy" | "medium" | "hard" | "veryHard"
+        ) {
+            return Err(AppError::Validation(
+                "mode must be veryEasy, easy, medium, hard, or veryHard".to_string(),
+            ));
         }
 
         Ok(())

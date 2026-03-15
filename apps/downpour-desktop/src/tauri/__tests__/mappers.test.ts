@@ -14,7 +14,7 @@ const records: GameRecord[] = [
     levelReached: 3,
     mistakes: 2,
     misses: 1,
-    mode: 'normal',
+    mode: 'medium',
   },
   {
     id: 'b',

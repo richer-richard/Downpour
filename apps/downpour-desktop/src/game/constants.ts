@@ -26,14 +26,32 @@ export const MODE_MODIFIER: Record<
   {
     speedMultiplier: number;
     spawnMultiplier: number;
+    maxConcurrentWords: number;
   }
 > = {
-  normal: {
+  veryEasy: {
+    speedMultiplier: 0.76,
+    spawnMultiplier: 0.78,
+    maxConcurrentWords: 12,
+  },
+  easy: {
+    speedMultiplier: 0.92,
+    spawnMultiplier: 0.89,
+    maxConcurrentWords: 13,
+  },
+  medium: {
     speedMultiplier: 1,
     spawnMultiplier: 1,
+    maxConcurrentWords: 14,
   },
   hard: {
     speedMultiplier: 1.2,
     spawnMultiplier: 1.15,
+    maxConcurrentWords: 16,
+  },
+  veryHard: {
+    speedMultiplier: 1.32,
+    spawnMultiplier: 1.3,
+    maxConcurrentWords: 18,
   },
 };

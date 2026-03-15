@@ -27,16 +27,21 @@ const FALL_SPEED_MIN: f64 = 0.10;
 const CURRENT_WPM_WINDOW_SECONDS: f64 = 8.0;
 const PEAK_WPM_MIN_SECONDS: f64 = 1.5;
 const RECENT_WORD_MEMORY: usize = 18;
-const MAX_CONCURRENT_NORMAL: u32 = 14;
+const MAX_CONCURRENT_VERY_EASY: u32 = 12;
+const MAX_CONCURRENT_EASY: u32 = 13;
+const MAX_CONCURRENT_MEDIUM: u32 = 14;
 const MAX_CONCURRENT_HARD: u32 = 16;
+const MAX_CONCURRENT_VERY_HARD: u32 = 18;
 
 const STARTER_WORDS_RAW: &str = include_str!("../../src/assets/wordlists/starter.txt");
 const COMMON_WORDS_RAW: &str = include_str!("../../src/assets/wordlists/scowl-common.txt");
 const EXTENDED_WORDS_RAW: &str = include_str!("../../src/assets/wordlists/scowl-extended.txt");
 
-static STARTER_WORDS: LazyLock<Vec<String>> = LazyLock::new(|| parse_word_list(STARTER_WORDS_RAW, 3));
+static STARTER_WORDS: LazyLock<Vec<String>> =
+    LazyLock::new(|| parse_word_list(STARTER_WORDS_RAW, 3));
 static COMMON_WORDS: LazyLock<Vec<String>> = LazyLock::new(|| parse_word_list(COMMON_WORDS_RAW, 4));
-static EXTENDED_WORDS: LazyLock<Vec<String>> = LazyLock::new(|| parse_word_list(EXTENDED_WORDS_RAW, 4));
+static EXTENDED_WORDS: LazyLock<Vec<String>> =
+    LazyLock::new(|| parse_word_list(EXTENDED_WORDS_RAW, 4));
 static EXTENDED_ONLY_WORDS: LazyLock<Vec<String>> = LazyLock::new(build_extended_only_words);
 static WORD_LIST: LazyLock<Vec<String>> = LazyLock::new(build_word_list);
 static EASY_WORDS: LazyLock<Vec<String>> = LazyLock::new(build_easy_words);
@@ -320,8 +325,8 @@ impl GameSession {
         self.elapsed_seconds += dt;
 
         if !self.settings.reduced_motion {
-            self.wind =
-                (self.elapsed_seconds * 0.35).sin() * 0.2 + (self.elapsed_seconds * 1.2).sin() * 0.08;
+            self.wind = (self.elapsed_seconds * 0.35).sin() * 0.2
+                + (self.elapsed_seconds * 1.2).sin() * 0.08;
         } else {
             self.wind = 0.0;
         }
@@ -524,7 +529,9 @@ impl GameSession {
     }
 
     fn progress_difficulty(&mut self) {
-        if self.elapsed_seconds >= self.next_level_at_seconds || self.cleared_since_level >= LEVEL_UP_WORDS {
+        if self.elapsed_seconds >= self.next_level_at_seconds
+            || self.cleared_since_level >= LEVEL_UP_WORDS
+        {
             self.level += 1;
             self.next_level_at_seconds += LEVEL_UP_SECONDS;
             self.cleared_since_level = 0;
@@ -610,7 +617,6 @@ impl GameSession {
             strength: 1.35 + word.text.len() as f64 * 0.04,
             r#type: "miss".to_string(),
         });
-
     }
 
     fn end_game(&mut self) {
@@ -768,15 +774,25 @@ fn calculate_word_score(word_length: usize, level: u32, combo_streak: u32) -> i6
 
 fn get_difficulty_profile(level: u32, difficulty: &str) -> DifficultyProfile {
     let safe_level = level.max(1) as f64;
-    let (speed_multiplier, spawn_multiplier, max_concurrent_words) = if difficulty == "hard" {
-        (1.2, 1.15, MAX_CONCURRENT_HARD)
-    } else {
-        (1.0, 1.0, MAX_CONCURRENT_NORMAL)
+    let (speed_multiplier, spawn_multiplier, max_concurrent_words) = match difficulty {
+        "veryEasy" => (0.76, 0.78, MAX_CONCURRENT_VERY_EASY),
+        "easy" => (0.92, 0.89, MAX_CONCURRENT_EASY),
+        "hard" => (1.2, 1.15, MAX_CONCURRENT_HARD),
+        "veryHard" => (1.32, 1.3, MAX_CONCURRENT_VERY_HARD),
+        "medium" | "normal" | _ => (1.0, 1.0, MAX_CONCURRENT_MEDIUM),
     };
 
     DifficultyProfile {
-        spawn_interval_seconds: clamp((1.55 - safe_level * 0.07) / spawn_multiplier, SPAWN_INTERVAL_MIN, 1.55),
-        fall_speed_normalized: clamp((0.098 + safe_level * 0.015) * speed_multiplier, FALL_SPEED_MIN, 0.58),
+        spawn_interval_seconds: clamp(
+            (1.55 - safe_level * 0.07) / spawn_multiplier,
+            SPAWN_INTERVAL_MIN,
+            1.55,
+        ),
+        fall_speed_normalized: clamp(
+            (0.098 + safe_level * 0.015) * speed_multiplier,
+            FALL_SPEED_MIN,
+            0.58,
+        ),
         max_concurrent_words: (3.0 + safe_level * 0.7).floor() as usize,
     }
     .with_cap(max_concurrent_words as usize)
@@ -959,7 +975,9 @@ fn is_valid_word(word: &str, minimum_length: usize) -> bool {
 
 fn word_difficulty_score(word: &str) -> usize {
     let mut score = word.len();
-    for pattern in ["th", "sh", "ch", "ph", "ck", "qu", "str", "ght", "tion", "ough", "scr", "spl", "chr"] {
+    for pattern in [
+        "th", "sh", "ch", "ph", "ck", "qu", "str", "ght", "tion", "ough", "scr", "spl", "chr",
+    ] {
         if word.contains(pattern) {
             score += 2;
         }
@@ -994,7 +1012,11 @@ fn rolling_wpm(active_seconds: f64, recent_correct_events: &[f64]) -> f64 {
         return 0.0;
     }
 
-    let span_seconds = clamp(active_seconds - first_recent, PEAK_WPM_MIN_SECONDS, CURRENT_WPM_WINDOW_SECONDS);
+    let span_seconds = clamp(
+        active_seconds - first_recent,
+        PEAK_WPM_MIN_SECONDS,
+        CURRENT_WPM_WINDOW_SECONDS,
+    );
     compute_wpm(char_count, span_seconds)
 }
 
@@ -1006,7 +1028,7 @@ mod tests {
         GameSettings {
             reduced_motion: false,
             graphics_quality: "high".to_string(),
-            difficulty: "normal".to_string(),
+            difficulty: "medium".to_string(),
             sound_enabled: true,
         }
     }
@@ -1076,7 +1098,11 @@ mod tests {
         assert!(session.target_word_id.is_none());
 
         let snapshot = session.render_snapshot();
-        let highlighted = snapshot.words.iter().filter(|word| word.typed_count == 1).count();
+        let highlighted = snapshot
+            .words
+            .iter()
+            .filter(|word| word.typed_count == 1)
+            .count();
         assert_eq!(highlighted, 2);
 
         session.handle_printable_input('i');

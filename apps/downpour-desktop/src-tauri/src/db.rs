@@ -133,15 +133,15 @@ impl Database {
     pub fn get_best_wpm(&self) -> Result<f64, AppError> {
         let conn = self.connection()?;
         let value: Option<String> = conn
-            .query_row(
-                "SELECT value FROM meta WHERE key = 'best_wpm'",
-                [],
-                |row| row.get(0),
-            )
+            .query_row("SELECT value FROM meta WHERE key = 'best_wpm'", [], |row| {
+                row.get(0)
+            })
             .ok();
 
         match value {
-            Some(raw) => raw.parse::<f64>().map_err(|err| AppError::Validation(err.to_string())),
+            Some(raw) => raw
+                .parse::<f64>()
+                .map_err(|err| AppError::Validation(err.to_string())),
             None => Ok(0.0),
         }
     }
@@ -194,7 +194,7 @@ mod tests {
             level_reached: 7,
             mistakes: 4,
             misses: 2,
-            mode: "normal".to_string(),
+            mode: "medium".to_string(),
         }
     }
 

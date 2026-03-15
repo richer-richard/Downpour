@@ -6,6 +6,7 @@ import type {
   GraphicsQuality,
   PersistedSnapshot,
 } from './types';
+import { isDifficultyMode, normalizeDifficultyMode } from './types';
 
 function isString(value: unknown): value is string {
   return typeof value === 'string';
@@ -16,7 +17,7 @@ function isFiniteNumber(value: unknown): value is number {
 }
 
 function isDifficulty(value: unknown): value is DifficultyMode {
-  return value === 'normal' || value === 'hard';
+  return isDifficultyMode(value);
 }
 
 function isGraphicsQuality(value: unknown): value is GraphicsQuality {
@@ -72,10 +73,16 @@ export function isGameSettings(value: unknown): value is GameSettings {
   }
 
   const settings = value as GameSettings;
+  const normalizedDifficulty = normalizeDifficultyMode(settings.difficulty);
+
+  if (normalizedDifficulty && settings.difficulty !== normalizedDifficulty) {
+    settings.difficulty = normalizedDifficulty;
+  }
+
   return (
     typeof settings.reducedMotion === 'boolean' &&
     isGraphicsQuality(settings.graphicsQuality) &&
-    isDifficulty(settings.difficulty) &&
+    normalizedDifficulty !== null &&
     typeof settings.soundEnabled === 'boolean'
   );
 }

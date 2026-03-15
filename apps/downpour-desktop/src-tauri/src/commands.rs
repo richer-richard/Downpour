@@ -58,10 +58,7 @@ pub fn tick_game_session(
 }
 
 #[tauri::command]
-pub fn destroy_game_session(
-    state: State<'_, AppState>,
-    session_id: String,
-) -> Result<(), String> {
+pub fn destroy_game_session(state: State<'_, AppState>, session_id: String) -> Result<(), String> {
     state
         .engine
         .destroy_session(&session_id)

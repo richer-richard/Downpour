@@ -1,4 +1,33 @@
-export type DifficultyMode = 'normal' | 'hard';
+export type DifficultyMode = 'veryEasy' | 'easy' | 'medium' | 'hard' | 'veryHard';
+
+export const DIFFICULTY_MODES = ['veryEasy', 'easy', 'medium', 'hard', 'veryHard'] as const;
+
+export function isDifficultyMode(value: unknown): value is DifficultyMode {
+  return typeof value === 'string' && DIFFICULTY_MODES.some((mode) => mode === value);
+}
+
+export function normalizeDifficultyMode(value: unknown): DifficultyMode | null {
+  if (value === 'normal') {
+    return 'medium';
+  }
+
+  return isDifficultyMode(value) ? value : null;
+}
+
+export function formatDifficultyMode(mode: DifficultyMode): string {
+  switch (mode) {
+    case 'veryEasy':
+      return 'Very Easy';
+    case 'easy':
+      return 'Easy';
+    case 'medium':
+      return 'Medium';
+    case 'hard':
+      return 'Hard';
+    case 'veryHard':
+      return 'Very Hard';
+  }
+}
 
 export type GraphicsQuality = 'high' | 'low';
 

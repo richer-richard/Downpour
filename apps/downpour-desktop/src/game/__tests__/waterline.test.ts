@@ -5,7 +5,7 @@ import { GameController } from '../gameController';
 const SETTINGS: GameSettings = {
   reducedMotion: false,
   graphicsQuality: 'high',
-  difficulty: 'normal',
+  difficulty: 'medium',
   soundEnabled: true,
 };
 

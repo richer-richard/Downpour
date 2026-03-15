@@ -27,7 +27,7 @@ export function getDifficultyProfile(level: number, mode: DifficultyMode): Diffi
     0.58,
   );
 
-  const maxConcurrentWords = clamp(Math.floor(3 + safeLevel * 0.7), 3, mode === 'hard' ? 16 : 14);
+  const maxConcurrentWords = clamp(Math.floor(3 + safeLevel * 0.7), 3, mod.maxConcurrentWords);
 
   return {
     spawnIntervalSeconds,

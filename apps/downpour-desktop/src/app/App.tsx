@@ -1,4 +1,4 @@
-import type { GameRecordInput, GameSettings } from '@downpour/shared';
+import { normalizeDifficultyMode, type GameRecordInput, type GameSettings } from '@downpour/shared';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { SessionEndSummary } from '../game/gameController';
 import { loadBestWpm, loadRecords, persistBestWpm, persistRecord, resetAllRecords } from '../tauri/storage';
@@ -14,7 +14,7 @@ const SETTINGS_KEY = 'downpour.settings.v1';
 const DEFAULT_SETTINGS: GameSettings = {
   reducedMotion: false,
   graphicsQuality: 'high',
-  difficulty: 'normal',
+  difficulty: 'medium',
   soundEnabled: true,
 };
 
@@ -43,7 +43,7 @@ function loadStoredSettings(): GameSettings {
     return {
       reducedMotion: Boolean(parsed.reducedMotion),
       graphicsQuality: parsed.graphicsQuality === 'low' ? 'low' : 'high',
-      difficulty: parsed.difficulty === 'hard' ? 'hard' : 'normal',
+      difficulty: normalizeDifficultyMode(parsed.difficulty) ?? DEFAULT_SETTINGS.difficulty,
       soundEnabled: parsed.soundEnabled !== false,
     };
   } catch {

@@ -1,4 +1,4 @@
-import type { GameSettings } from '@downpour/shared';
+import { DIFFICULTY_MODES, formatDifficultyMode, type GameSettings } from '@downpour/shared';
 import { NeonButton } from '../components/NeonButton';
 
 interface SettingsScreenProps {
@@ -55,8 +55,11 @@ export function SettingsScreen({ settings, onChange, onBack }: SettingsScreenPro
                 onChange({ ...settings, difficulty: event.target.value as GameSettings['difficulty'] })
               }
             >
-              <option value="normal">Normal</option>
-              <option value="hard">Hard</option>
+              {DIFFICULTY_MODES.map((mode) => (
+                <option key={mode} value={mode}>
+                  {formatDifficultyMode(mode)}
+                </option>
+              ))}
             </select>
           </label>
         </div>
