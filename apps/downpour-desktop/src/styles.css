@@ -126,6 +126,73 @@ select {
     0 0 22px rgba(90, 203, 255, 0.35);
 }
 
+.downpour-wordmark {
+  position: relative;
+  display: inline-block;
+  padding: 0.06em 0.28em 0.24em 0;
+}
+
+.downpour-wordmark__text {
+  position: relative;
+  z-index: 2;
+  color: #c9fbff;
+  text-shadow:
+    0 0 16px rgba(125, 249, 255, 0.74),
+    0 0 28px rgba(71, 183, 226, 0.36);
+}
+
+.downpour-wordmark__surface {
+  position: absolute;
+  left: 0.05em;
+  right: 0.42em;
+  bottom: 0.08em;
+  z-index: 3;
+  height: 0.6em;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.downpour-wordmark__cursor {
+  position: absolute;
+  top: 0.18em;
+  right: 0;
+  bottom: 0.24em;
+  z-index: 1;
+  width: 0.11em;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 207, 148, 0.96), rgba(255, 159, 67, 0.82));
+  box-shadow:
+    0 0 16px rgba(255, 159, 67, 0.55),
+    0 0 28px rgba(255, 159, 67, 0.3);
+}
+
+.downpour-wordmark__rainline {
+  position: absolute;
+  top: -0.22em;
+  z-index: 1;
+  width: 0.1em;
+  height: 0.72em;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(177, 245, 255, 0.9), rgba(177, 245, 255, 0.12));
+  transform: rotate(28deg);
+  box-shadow: 0 0 10px rgba(125, 249, 255, 0.18);
+  opacity: 0.62;
+}
+
+.downpour-wordmark__rainline--1 {
+  left: 0.3em;
+}
+
+.downpour-wordmark__rainline--2 {
+  left: 0.72em;
+  height: 0.88em;
+}
+
+.downpour-wordmark__rainline--3 {
+  left: 1.14em;
+  height: 0.8em;
+}
+
 ::-webkit-scrollbar {
   width: 10px;
 }

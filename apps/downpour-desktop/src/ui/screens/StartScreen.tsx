@@ -1,4 +1,5 @@
 import { NeonButton } from '../components/NeonButton';
+import { DownpourLogo } from '../components/DownpourLogo';
 
 interface StartScreenProps {
   bestWpm: number;
@@ -18,8 +19,7 @@ export function StartScreen({ bestWpm, onStart, onOpenRecords, onOpenSettings }:
       </div>
 
       <div className="glass-panel relative z-10 w-full max-w-2xl rounded-2xl p-8 text-center sm:p-10">
-        <p className="mb-3 font-display text-xs uppercase tracking-[0.28em] text-cyan-200/85">Neon Typing Rain</p>
-        <h1 className="neon-text mb-3 font-display text-5xl uppercase tracking-[0.32em] sm:text-6xl">Downpour</h1>
+        <DownpourLogo className="mb-4" />
         <p className="mx-auto mb-8 max-w-xl text-lg text-cyan-50/85">
           Words fall through a rain-soaked city. Type fast, keep the waterline down, and survive the storm.
         </p>
