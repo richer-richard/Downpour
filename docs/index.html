@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Downpour</title>
+    <meta
+      name="description"
+      content="Downpour is a macOS-first typing game released as a build-from-source installation."
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">macOS build-from-source release</p>
+          <h1>Downpour</h1>
+          <p class="lede">
+            A neon storm of falling words, rising water, and clean key timing. Install it from
+            tagged source, build it locally, and drop the app straight into
+            <code>/Applications</code>.
+          </p>
+          <div class="hero-actions">
+            <a
+              class="button button-primary"
+              href="https://github.com/richer-richard/Downpour/releases/tag/v0.1.0"
+            >
+              View v0.1.0 Release
+            </a>
+            <a class="button button-secondary" href="https://github.com/richer-richard/Downpour">
+              Browse Source
+            </a>
+          </div>
+        </div>
+
+        <div class="hero-art" aria-hidden="true">
+          <div class="glow glow-cyan"></div>
+          <div class="glow glow-amber"></div>
+          <div class="logo-frame">
+            <img src="./assets/logo-mark.svg" alt="" />
+          </div>
+        </div>
+      </header>
+
+      <main>
+        <section class="panel panel-highlight">
+          <div>
+            <p class="section-label">Release shape</p>
+            <h2>Source-first, local build, no binary download</h2>
+          </div>
+          <p>
+            This release is a build-from-source installation for macOS. It does not ship a notarized
+            <code>.app</code>, <code>.zip</code>, or <code>.dmg</code>. Download the tagged source,
+            run <code>./install.sh</code>, and let the script handle the toolchain, app build,
+            install, and local cleanup.
+          </p>
+        </section>
+
+        <section class="content-grid">
+          <article class="panel">
+            <p class="section-label">Install</p>
+            <h2>Run the installer from the release source</h2>
+            <pre><code>git clone https://github.com/richer-richard/Downpour.git
+cd Downpour
+git checkout v0.1.0
+./install.sh</code></pre>
+            <p class="muted">The first build can take several minutes on a fresh machine.</p>
+          </article>
+
+          <article class="panel">
+            <p class="section-label">What the script does</p>
+            <ul class="feature-list">
+              <li>
+                Checks or installs Xcode Command Line Tools, Homebrew, Node.js, pnpm, and Rust.
+              </li>
+              <li>Builds <code>Downpour.app</code> locally from the tagged source.</li>
+              <li>Copies the finished app into <code>/Applications</code>.</li>
+              <li>Removes repo-local build artifacts when installation finishes.</li>
+            </ul>
+          </article>
+        </section>
+
+        <section class="content-grid">
+          <article class="panel">
+            <p class="section-label">Notes</p>
+            <h2>What to expect on macOS</h2>
+            <ul class="feature-list">
+              <li>macOS only.</li>
+              <li>
+                The installer may ask for administrator access when writing to
+                <code>/Applications</code>.
+              </li>
+              <li>
+                If Gatekeeper warns on first launch, open the app from Finder or allow it in System
+                Settings.
+              </li>
+            </ul>
+          </article>
+
+          <article class="panel">
+            <p class="section-label">Repository</p>
+            <h2>Project details</h2>
+            <ul class="link-list">
+              <li>
+                <a href="https://github.com/richer-richard/Downpour/releases">All releases</a>
+              </li>
+              <li>
+                <a href="https://github.com/richer-richard/Downpour/blob/main/README.md">README</a>
+              </li>
+              <li>
+                <a href="https://github.com/richer-richard/Downpour/tree/main/apps/downpour-desktop"
+                  >Desktop app source</a
+                >
+              </li>
+            </ul>
+          </article>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

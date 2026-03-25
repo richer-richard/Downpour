@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+APP_NAME="Downpour.app"
+APP_DESTINATION="/Applications/${APP_NAME}"
+APP_BUNDLE_PATH="apps/downpour-desktop/src-tauri/target/release/bundle/macos/${APP_NAME}"
+FRONTEND_DIST_PATH="apps/downpour-desktop/dist"
+TAURI_TARGET_PATH="apps/downpour-desktop/src-tauri/target"
+
 log() {
   printf '\n[downpour-install] %s\n' "$*"
 }
@@ -167,20 +173,55 @@ ensure_rust() {
   log "Rust $(rustc --version) ready"
 }
 
-ensure_tauri_cli() {
-  if cargo tauri -V >/dev/null 2>&1; then
-    log "$(cargo tauri -V)"
-    return
-  fi
-
-  log "Installing Tauri CLI"
-  cargo install tauri-cli --locked
-  log "$(cargo tauri -V)"
-}
-
 install_workspace_dependencies() {
   log "Installing workspace dependencies with pnpm"
-  pnpm install
+  pnpm install --frozen-lockfile
+}
+
+build_application() {
+  log "Building Downpour from source"
+  pnpm build
+}
+
+ensure_app_bundle_exists() {
+  if [[ ! -d "${APP_BUNDLE_PATH}" ]]; then
+    fail "Expected app bundle was not found at ${APP_BUNDLE_PATH}."
+  fi
+
+  log "Built app bundle found at ${APP_BUNDLE_PATH}"
+}
+
+copy_app_to_applications() {
+  local use_sudo=0
+
+  if [[ ! -w "/Applications" ]]; then
+    use_sudo=1
+    log "Administrator access is required to update ${APP_DESTINATION}"
+  fi
+
+  if [[ "${use_sudo}" -eq 1 ]]; then
+    sudo rm -rf "${APP_DESTINATION}"
+    sudo ditto "${APP_BUNDLE_PATH}" "${APP_DESTINATION}"
+  else
+    rm -rf "${APP_DESTINATION}"
+    ditto "${APP_BUNDLE_PATH}" "${APP_DESTINATION}"
+  fi
+
+  if [[ ! -d "${APP_DESTINATION}" ]]; then
+    fail "The app was built but ${APP_DESTINATION} was not created."
+  fi
+
+  log "Installed ${APP_NAME} to ${APP_DESTINATION}"
+}
+
+cleanup_build_outputs() {
+  log "Removing local build artifacts"
+  rm -rf "${FRONTEND_DIST_PATH}" "${TAURI_TARGET_PATH}"
+}
+
+print_summary() {
+  log "Install complete. Launch Downpour from /Applications."
+  log "If macOS warns on first launch, open the app from Finder or allow it in System Settings."
 }
 
 main() {
@@ -189,16 +230,19 @@ main() {
   cd "${script_dir}"
 
   ensure_macos
+  log "This installer may install Homebrew, Node.js, pnpm, and Rust, then build Downpour locally."
   ensure_xcode_tools
   ensure_homebrew
   sync_homebrew_env
   ensure_node
   ensure_pnpm
   ensure_rust
-  ensure_tauri_cli
   install_workspace_dependencies
-
-  log "Bootstrap complete. Run 'pnpm dev' to launch Downpour."
+  build_application
+  ensure_app_bundle_exists
+  copy_app_to_applications
+  cleanup_build_outputs
+  print_summary
 }
 
 main "$@"
