@@ -15,7 +15,11 @@
       <header class="hero">
         <div class="hero-copy">
           <p class="eyebrow">macOS build-from-source release</p>
-          <h1>Downpour</h1>
+          <div class="wordmark" aria-label="Downpour">
+            <span class="wordmark-echo" aria-hidden="true">Downpour</span>
+            <h1 class="wordmark-main">Downpour</h1>
+            <span class="wordmark-shimmer" aria-hidden="true">Downpour</span>
+          </div>
           <p class="lede">
             A neon storm of falling words, rising water, and clean key timing. Install it from
             tagged source, build it locally, and drop the app straight into
@@ -57,63 +61,159 @@
           </p>
         </section>
 
-        <section class="content-grid">
-          <article class="panel">
-            <p class="section-label">Install</p>
-            <h2>Run the installer from the release source</h2>
-            <pre><code>git clone https://github.com/richer-richard/Downpour.git
+        <section class="deck-shell">
+          <article class="panel install-stage">
+            <div class="install-stage__header">
+              <div>
+                <p class="section-label">Install</p>
+                <h2>Run the installer from the release source</h2>
+              </div>
+              <div class="chip-row" aria-label="Install traits">
+                <span class="info-chip">macOS</span>
+                <span class="info-chip">local build</span>
+                <span class="info-chip">/Applications</span>
+              </div>
+            </div>
+
+            <div class="terminal-window">
+              <div class="terminal-window__chrome">
+                <span></span>
+                <span></span>
+                <span></span>
+                <p>build-from-source session</p>
+              </div>
+              <pre><code>git clone https://github.com/richer-richard/Downpour.git
 cd Downpour
 git checkout v0.1.0
 ./install.sh</code></pre>
-            <p class="muted">The first build can take several minutes on a fresh machine.</p>
+            </div>
+
+            <div class="install-stage__footer">
+              <p class="muted">The first build can take several minutes on a fresh machine.</p>
+              <div class="install-stage__metrics" aria-label="Install metrics">
+                <div class="metric-card">
+                  <strong>4</strong>
+                  <span>phases automated</span>
+                </div>
+                <div class="metric-card">
+                  <strong>0</strong>
+                  <span>binary downloads</span>
+                </div>
+                <div class="metric-card">
+                  <strong>1</strong>
+                  <span>app copied into /Applications</span>
+                </div>
+              </div>
+            </div>
           </article>
 
-          <article class="panel">
-            <p class="section-label">What the script does</p>
-            <ul class="feature-list">
-              <li>
-                Checks or installs Xcode Command Line Tools, Homebrew, Node.js, pnpm, and Rust.
+          <article class="panel process-rail">
+            <p class="section-label">Build path</p>
+            <h3>What the script actually does</h3>
+            <ol class="process-list">
+              <li class="process-step">
+                <span class="process-step__index">01</span>
+                <div class="process-step__body">
+                  <h4>Provision the toolchain</h4>
+                  <p>
+                    Checks or installs Xcode Command Line Tools, Homebrew, Node.js, pnpm, and Rust.
+                  </p>
+                </div>
               </li>
-              <li>Builds <code>Downpour.app</code> locally from the tagged source.</li>
-              <li>Copies the finished app into <code>/Applications</code>.</li>
-              <li>Removes repo-local build artifacts when installation finishes.</li>
-            </ul>
+              <li class="process-step">
+                <span class="process-step__index">02</span>
+                <div class="process-step__body">
+                  <h4>Build the tagged source</h4>
+                  <p>Compiles <code>Downpour.app</code> locally from the release checkout.</p>
+                </div>
+              </li>
+              <li class="process-step">
+                <span class="process-step__index">03</span>
+                <div class="process-step__body">
+                  <h4>Install the finished app</h4>
+                  <p>
+                    Copies the application bundle into <code>/Applications</code> and replaces any
+                    older install.
+                  </p>
+                </div>
+              </li>
+              <li class="process-step">
+                <span class="process-step__index">04</span>
+                <div class="process-step__body">
+                  <h4>Clear repo-local build residue</h4>
+                  <p>
+                    Removes the generated frontend and Tauri build artifacts after the install
+                    completes.
+                  </p>
+                </div>
+              </li>
+            </ol>
           </article>
-        </section>
 
-        <section class="content-grid">
-          <article class="panel">
-            <p class="section-label">Notes</p>
-            <h2>What to expect on macOS</h2>
-            <ul class="feature-list">
-              <li>macOS only.</li>
-              <li>
-                The installer may ask for administrator access when writing to
-                <code>/Applications</code>.
-              </li>
-              <li>
-                If Gatekeeper warns on first launch, open the app from Finder or allow it in System
-                Settings.
-              </li>
-            </ul>
+          <article class="panel system-briefing">
+            <div class="system-briefing__header">
+              <div>
+                <p class="section-label">macOS briefing</p>
+                <h3>What to expect on first launch</h3>
+              </div>
+              <span class="briefing-badge">build-from-source</span>
+            </div>
+
+            <div class="briefing-grid">
+              <div class="briefing-card">
+                <span class="briefing-card__label">Platform</span>
+                <p>macOS only, installed as a local application bundle.</p>
+              </div>
+              <div class="briefing-card">
+                <span class="briefing-card__label">Permissions</span>
+                <p>
+                  The installer may request administrator access when writing into
+                  <code>/Applications</code>.
+                </p>
+              </div>
+              <div class="briefing-card">
+                <span class="briefing-card__label">First launch</span>
+                <p>If Gatekeeper warns, open the app from Finder or allow it in System Settings.</p>
+              </div>
+            </div>
           </article>
 
-          <article class="panel">
-            <p class="section-label">Repository</p>
-            <h2>Project details</h2>
-            <ul class="link-list">
-              <li>
-                <a href="https://github.com/richer-richard/Downpour/releases">All releases</a>
-              </li>
-              <li>
-                <a href="https://github.com/richer-richard/Downpour/blob/main/README.md">README</a>
-              </li>
-              <li>
-                <a href="https://github.com/richer-richard/Downpour/tree/main/apps/downpour-desktop"
-                  >Desktop app source</a
+          <article class="panel repo-dock">
+            <div class="repo-dock__header">
+              <div>
+                <p class="section-label">Repository</p>
+                <h3>Open the right source surface</h3>
+              </div>
+              <p class="repo-dock__lede">
+                Everything below points to the source-first release path, the docs, and the desktop
+                app itself.
+              </p>
+            </div>
+
+            <div class="dock-links">
+              <a class="dock-link" href="https://github.com/richer-richard/Downpour/releases">
+                <span class="dock-link__title">All releases</span>
+                <span class="dock-link__meta">Tagged source archives and release notes.</span>
+              </a>
+              <a
+                class="dock-link"
+                href="https://github.com/richer-richard/Downpour/blob/main/README.md"
+              >
+                <span class="dock-link__title">README</span>
+                <span class="dock-link__meta"
+                  >Install guidance, toolchain notes, and troubleshooting.</span
                 >
-              </li>
-            </ul>
+              </a>
+              <a
+                class="dock-link"
+                href="https://github.com/richer-richard/Downpour/tree/main/apps/downpour-desktop"
+              >
+                <span class="dock-link__title">Desktop app source</span>
+                <span class="dock-link__meta"
+                  >Tauri shell, React frontend, and desktop packaging.</span
+                >
+              </a>
+            </div>
           </article>
         </section>
       </main>
