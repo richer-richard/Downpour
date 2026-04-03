@@ -135,3 +135,18 @@ export interface GameSessionFrame {
   impacts: ImpactEvent[];
   endSummary: SessionEndSummary | null;
 }
+
+export type AppErrorCode = 'io' | 'sql' | 'serde' | 'validation' | 'path' | 'state' | 'not_found';
+
+export interface AppCommandError {
+  code: AppErrorCode;
+  message: string;
+}
+
+export function isAppCommandError(value: unknown): value is AppCommandError {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+  const err = value as AppCommandError;
+  return typeof err.code === 'string' && typeof err.message === 'string';
+}

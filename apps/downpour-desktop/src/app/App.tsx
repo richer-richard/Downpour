@@ -1,106 +1,33 @@
-import { normalizeDifficultyMode, type GameRecordInput, type GameSettings } from '@downpour/shared';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { GameRecordInput } from '@downpour/shared';
+import { useCallback, useMemo, useState } from 'react';
 import type { SessionEndSummary } from '../game/gameController';
-import { loadBestWpm, loadRecords, persistBestWpm, persistRecord, resetAllRecords } from '../tauri/storage';
-import type { AppView } from './router';
+import { persistBestWpm, persistRecord } from '../tauri/storage';
+import { toErrorMessage } from './errors';
+import { useBootstrap } from './useBootstrap';
+import { useRecords } from './useRecords';
+import { useSettings } from './useSettings';
 import { EndScreen } from '../ui/screens/EndScreen';
 import { GameScreen } from '../ui/screens/GameScreen';
 import { RecordsScreen } from '../ui/screens/RecordsScreen';
 import { SettingsScreen } from '../ui/screens/SettingsScreen';
 import { StartScreen } from '../ui/screens/StartScreen';
 
-const SETTINGS_KEY = 'downpour.settings.v1';
-
-const DEFAULT_SETTINGS: GameSettings = {
-  reducedMotion: false,
-  graphicsQuality: 'high',
-  difficulty: 'medium',
-  soundEnabled: true,
-};
-
-function toErrorMessage(value: unknown, fallback: string): string {
-  if (value instanceof Error && value.message) {
-    return value.message;
-  }
-  if (typeof value === 'string' && value.trim().length > 0) {
-    return value;
-  }
-  return fallback;
-}
-
-function loadStoredSettings(): GameSettings {
-  if (typeof window === 'undefined') {
-    return DEFAULT_SETTINGS;
-  }
-
-  const raw = window.localStorage.getItem(SETTINGS_KEY);
-  if (!raw) {
-    return DEFAULT_SETTINGS;
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as Partial<GameSettings>;
-    return {
-      reducedMotion: Boolean(parsed.reducedMotion),
-      graphicsQuality: parsed.graphicsQuality === 'low' ? 'low' : 'high',
-      difficulty: normalizeDifficultyMode(parsed.difficulty) ?? DEFAULT_SETTINGS.difficulty,
-      soundEnabled: parsed.soundEnabled !== false,
-    };
-  } catch {
-    return DEFAULT_SETTINGS;
-  }
-}
+export type AppView = 'start' | 'playing' | 'ended' | 'records' | 'settings';
 
 export function App() {
   const [view, setView] = useState<AppView>('start');
-  const [settings, setSettings] = useState<GameSettings>(() => loadStoredSettings());
-  const [globalBestWpm, setGlobalBestWpm] = useState(0);
-  const [records, setRecords] = useState<Awaited<ReturnType<typeof loadRecords>>>([]);
-  const [recordsLoading, setRecordsLoading] = useState(false);
   const [sessionSummary, setSessionSummary] = useState<SessionEndSummary | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [sessionKey, setSessionKey] = useState(0);
-  const [booting, setBooting] = useState(true);
-  const [bootError, setBootError] = useState<string | null>(null);
   const [runtimeError, setRuntimeError] = useState<string | null>(null);
 
-  useEffect(() => {
-    window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-  }, [settings]);
-
-  const bootstrapApp = useCallback(async () => {
-    setBooting(true);
-    setBootError(null);
-    setRuntimeError(null);
-
-    try {
-      const [best, initialRecords] = await Promise.all([loadBestWpm(), loadRecords()]);
-      setGlobalBestWpm(best);
-      setRecords(initialRecords);
-    } catch (error) {
-      setBootError(toErrorMessage(error, 'Failed to initialize local game data.'));
-    } finally {
-      setBooting(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void bootstrapApp();
-  }, [bootstrapApp]);
-
-  const refreshRecords = useCallback(async () => {
-    setRecordsLoading(true);
-    try {
-      const values = await loadRecords();
-      setRecords(values);
-      return true;
-    } catch (error) {
-      setRuntimeError(toErrorMessage(error, 'Failed to load records.'));
-      return false;
-    } finally {
-      setRecordsLoading(false);
-    }
-  }, []);
+  const { settings, setSettings } = useSettings();
+  const { booting, bootError, globalBestWpm, setGlobalBestWpm, initialRecords, retry } = useBootstrap();
+  const { records, recordsLoading, refreshRecords, resetRecords } = useRecords(
+    initialRecords,
+    setGlobalBestWpm,
+    setRuntimeError,
+  );
 
   const onStart = useCallback(() => {
     setSaveStatus('idle');
@@ -124,21 +51,6 @@ export function App() {
 
   const onBackToStart = useCallback(() => {
     setView('start');
-  }, []);
-
-  const onResetRecords = useCallback(async () => {
-    setRecordsLoading(true);
-    try {
-      await resetAllRecords();
-      const [best, clearedRecords] = await Promise.all([loadBestWpm(), loadRecords()]);
-      setRecords(clearedRecords);
-      setGlobalBestWpm(best);
-      setRuntimeError(null);
-    } catch (error) {
-      setRuntimeError(toErrorMessage(error, 'Failed to reset records.'));
-    } finally {
-      setRecordsLoading(false);
-    }
   }, []);
 
   const onRunEnd = useCallback(
@@ -178,7 +90,7 @@ export function App() {
         }
       })();
     },
-    [globalBestWpm],
+    [globalBestWpm, setGlobalBestWpm],
   );
 
   const body = useMemo(() => {
@@ -201,9 +113,7 @@ export function App() {
             <p className="mb-4 text-cyan-50/90">{bootError}</p>
             <button
               className="rounded-md border border-cyan-300/50 bg-cyan-300/10 px-4 py-2 font-display text-sm uppercase tracking-[0.2em] text-cyan-100"
-              onClick={() => {
-                void bootstrapApp();
-              }}
+              onClick={retry}
               type="button"
             >
               Retry
@@ -233,7 +143,7 @@ export function App() {
           onRefresh={async () => {
             await refreshRecords();
           }}
-          onReset={onResetRecords}
+          onReset={resetRecords}
           onBack={onBackToStart}
         />
       );
@@ -270,21 +180,22 @@ export function App() {
   }, [
     bootError,
     booting,
-    bootstrapApp,
     globalBestWpm,
     onBackToStart,
     onOpenRecords,
     onOpenSettings,
-    onResetRecords,
     onRunEnd,
     onStart,
     records,
     recordsLoading,
     refreshRecords,
+    resetRecords,
+    retry,
     saveStatus,
     sessionKey,
     sessionSummary,
     settings,
+    setSettings,
     view,
   ]);
 

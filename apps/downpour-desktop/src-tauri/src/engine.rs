@@ -11,22 +11,70 @@ use serde::{Deserialize, Serialize};
 
 use crate::errors::AppError;
 
+// Y where the ground sits in normalized screen space (0 = top, 1 = bottom).
+// Words falling past this line count as missed.
 const GROUND_BASE_Y: f64 = 0.84;
+
+// Highest the waterline can visually reach. At water_level = 1.0 the surface
+// sits here, leaving almost no room for words — game over.
 const WATERLINE_TOP_Y: f64 = 0.14;
+
+// Vertical range the waterline can cover (ground to top). Converts the
+// abstract 0..1 water_level into a screen-space offset.
 const WATERLINE_RISE_RANGE: f64 = GROUND_BASE_Y - WATERLINE_TOP_Y;
+
+// How much the target waterline drops when a word is cleared. Intentionally
+// small — players need sustained accuracy to push water back down.
 const WATERLINE_CLEAR_DROP: f64 = 0.01;
+
+// Base waterline rise when a word is missed.
 const WATERLINE_MISS_RISE_BASE: f64 = 0.03;
+
+// Extra rise per letter in the missed word. Longer misses hurt more,
+// nudging players toward clearing long words before they land.
 const WATERLINE_MISS_RISE_PER_LETTER: f64 = 0.0018;
+
+// Extra rise per current level. Misses get progressively more dangerous
+// as the game speeds up, creating late-game pressure.
 const WATERLINE_MISS_RISE_PER_LEVEL: f64 = 0.001;
+
+// Exponential blend rate when the waterline is rising. Higher = snappier.
+// Intentionally faster than FALL_RESPONSE so rises feel urgent.
 const WATERLINE_RISE_RESPONSE: f64 = 8.5;
+
+// Exponential blend rate when the waterline is falling. Slower than
+// the rise rate so recovery feels gradual and earned.
 const WATERLINE_FALL_RESPONSE: f64 = 5.5;
+
+// Seconds between automatic level-ups (unless the player clears enough
+// words first). 15s keeps levels short without being overwhelming.
 const LEVEL_UP_SECONDS: f64 = 15.0;
+
+// Words cleared to trigger an early level-up. Rewards fast typers by
+// advancing them before the timer, which also means harder words sooner.
 const LEVEL_UP_WORDS: u32 = 7;
+
+// Minimum spawn interval — words never appear faster than this.
+// Prevents screen flooding at very high levels.
 const SPAWN_INTERVAL_MIN: f64 = 0.28;
+
+// Minimum fall speed — even on very-easy mode, words still move.
 const FALL_SPEED_MIN: f64 = 0.10;
+
+// Rolling window (in active-typing seconds) for the current WPM readout.
+// Longer than the frontend's 0.9s display window because the Rust engine
+// also uses this for session peak WPM tracking.
 const CURRENT_WPM_WINDOW_SECONDS: f64 = 8.0;
+
+// Minimum time span used when computing WPM. Prevents absurd spikes when
+// a player types a burst of characters in under a second.
 const PEAK_WPM_MIN_SECONDS: f64 = 1.5;
+
+// How many recently-spawned words to remember for dedup. Prevents the
+// same word from appearing twice in quick succession.
 const RECENT_WORD_MEMORY: usize = 18;
+
+// Per-difficulty caps on how many words can be on screen simultaneously.
 const MAX_CONCURRENT_VERY_EASY: u32 = 12;
 const MAX_CONCURRENT_EASY: u32 = 13;
 const MAX_CONCURRENT_MEDIUM: u32 = 14;
@@ -1129,5 +1177,324 @@ mod tests {
         let immediate = session.water_level;
         session.update(0.4);
         assert!(session.water_level > immediate);
+    }
+
+    // --- Word pool construction ---
+
+    #[test]
+    fn word_pools_are_non_empty() {
+        assert!(!EASY_WORDS.is_empty(), "easy pool empty");
+        assert!(!STEADY_WORDS.is_empty(), "steady pool empty");
+        assert!(!TRICKY_WORDS.is_empty(), "tricky pool empty");
+        assert!(!STORM_WORDS.is_empty(), "storm pool empty");
+        assert!(!STARTER_WORDS.is_empty(), "starter pool empty");
+    }
+
+    #[test]
+    fn easy_words_skew_short() {
+        let short_count = EASY_WORDS.iter().filter(|w| w.len() <= 6).count();
+        let ratio = short_count as f64 / EASY_WORDS.len() as f64;
+        assert!(
+            ratio > 0.7,
+            "easy pool should be mostly short words, got {:.1}%",
+            ratio * 100.0
+        );
+    }
+
+    // --- Difficulty profile ---
+
+    #[test]
+    fn difficulty_gets_harder_with_level() {
+        let early = get_difficulty_profile(1, "medium");
+        let late = get_difficulty_profile(10, "medium");
+
+        assert!(late.spawn_interval_seconds < early.spawn_interval_seconds);
+        assert!(late.fall_speed_normalized > early.fall_speed_normalized);
+    }
+
+    #[test]
+    fn five_modes_ordered_slowest_to_fastest() {
+        let level = 3;
+        let very_easy = get_difficulty_profile(level, "veryEasy");
+        let easy = get_difficulty_profile(level, "easy");
+        let medium = get_difficulty_profile(level, "medium");
+        let hard = get_difficulty_profile(level, "hard");
+        let very_hard = get_difficulty_profile(level, "veryHard");
+
+        assert!(very_easy.fall_speed_normalized < easy.fall_speed_normalized);
+        assert!(easy.fall_speed_normalized < medium.fall_speed_normalized);
+        assert!(medium.fall_speed_normalized < hard.fall_speed_normalized);
+        assert!(hard.fall_speed_normalized < very_hard.fall_speed_normalized);
+
+        assert!(very_easy.spawn_interval_seconds > easy.spawn_interval_seconds);
+        assert!(easy.spawn_interval_seconds > medium.spawn_interval_seconds);
+        assert!(medium.spawn_interval_seconds > hard.spawn_interval_seconds);
+        assert!(hard.spawn_interval_seconds > very_hard.spawn_interval_seconds);
+    }
+
+    // --- Session lifecycle via EngineManager ---
+
+    #[test]
+    fn create_session_returns_valid_initial_frame() {
+        let manager = EngineManager::default();
+        let frame = manager.create_session(sample_settings(), 0.0).unwrap();
+
+        assert!(!frame.session_id.is_empty());
+        assert_eq!(frame.hud.level, 1);
+        assert_eq!(frame.hud.score, 0);
+        assert_eq!(frame.hud.combo, 0);
+        assert!(!frame.hud.is_paused);
+        assert!(!frame.hud.is_game_over);
+    }
+
+    #[test]
+    fn tick_advances_elapsed_time() {
+        let manager = EngineManager::default();
+        let frame = manager.create_session(sample_settings(), 0.0).unwrap();
+        let id = frame.session_id;
+
+        let ticked = manager.tick_session(&id, 0.5, vec![]).unwrap();
+        assert!(ticked.hud.elapsed_seconds > 0.0);
+    }
+
+    #[test]
+    fn destroy_session_removes_it() {
+        let manager = EngineManager::default();
+        let frame = manager.create_session(sample_settings(), 0.0).unwrap();
+        let id = frame.session_id;
+
+        manager.destroy_session(&id).unwrap();
+
+        let result = manager.tick_session(&id, 0.1, vec![]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn tick_nonexistent_session_returns_not_found() {
+        let manager = EngineManager::default();
+        let result = manager.tick_session("fake-id", 0.1, vec![]);
+        assert!(result.is_err());
+    }
+
+    // --- Waterline physics ---
+
+    #[test]
+    fn waterline_drops_on_clear() {
+        let mut session = GameSession::new(sample_settings(), 0.0);
+        session.target_water_level = 0.2;
+        session.water_level = 0.2;
+
+        session.words = vec![ActiveWord {
+            id: "a".to_string(),
+            text: "hi".to_string(),
+            x: 0.5,
+            y: 0.3,
+            speed: 0.1,
+            mistake_flash: 0.0,
+        }];
+
+        session.handle_printable_input('h');
+        session.handle_printable_input('i');
+
+        assert!(
+            session.target_water_level < 0.2,
+            "target should drop after clear"
+        );
+    }
+
+    #[test]
+    fn waterline_interpolates_toward_target() {
+        let mut session = GameSession::new(sample_settings(), 0.0);
+        session.target_water_level = 0.5;
+        session.water_level = 0.0;
+
+        // A single small step should move toward target but not reach it
+        session.update_waterline(0.016);
+
+        assert!(session.water_level > 0.0, "water should have risen");
+        assert!(session.water_level < 0.5, "single step should not reach target");
+    }
+
+    // --- Scoring and combo ---
+
+    #[test]
+    fn clearing_words_increments_combo_and_score() {
+        let mut session = GameSession::new(sample_settings(), 0.0);
+        session.words = vec![ActiveWord {
+            id: "a".to_string(),
+            text: "go".to_string(),
+            x: 0.5,
+            y: 0.3,
+            speed: 0.1,
+            mistake_flash: 0.0,
+        }];
+
+        session.handle_printable_input('g');
+        session.handle_printable_input('o');
+
+        assert!(session.score > 0, "score should increase after clear");
+        assert_eq!(session.combo, 1, "combo should be 1 after first clear");
+    }
+
+    #[test]
+    fn combo_resets_on_miss() {
+        let mut session = GameSession::new(sample_settings(), 0.0);
+
+        // Build up a combo by clearing a word
+        session.words = vec![ActiveWord {
+            id: "a".to_string(),
+            text: "go".to_string(),
+            x: 0.5,
+            y: 0.3,
+            speed: 0.1,
+            mistake_flash: 0.0,
+        }];
+        session.handle_printable_input('g');
+        session.handle_printable_input('o');
+        assert_eq!(session.combo, 1);
+
+        // Now cause a miss by letting a word hit the ground
+        let ground_line = session.ground_line();
+        session.words.push(ActiveWord {
+            id: "b".to_string(),
+            text: "rain".to_string(),
+            x: 0.5,
+            y: ground_line + 0.01,
+            speed: 0.1,
+            mistake_flash: 0.0,
+        });
+        session.update(0.016);
+        assert_eq!(session.combo, 0, "combo should reset after miss");
+    }
+
+    #[test]
+    fn score_formula_matches_expected() {
+        // base = 12 + len * 7, level_factor = 1 + (level-1)*0.11, combo = 1 + min(combo,20)*0.05
+        let score = calculate_word_score(5, 1, 0);
+        let expected: f64 = (12.0 + 5.0 * 7.0) * 1.0 * 1.0;
+        assert_eq!(score, expected.round() as i64);
+
+        let score_with_combo = calculate_word_score(5, 1, 10);
+        let expected_combo: f64 = (12.0 + 5.0 * 7.0) * 1.0 * (1.0 + 10.0 * 0.05);
+        assert_eq!(score_with_combo, expected_combo.round() as i64);
+    }
+
+    // --- Pause / Resume ---
+
+    #[test]
+    fn paused_session_does_not_advance_time() {
+        let mut session = GameSession::new(sample_settings(), 0.0);
+        session.set_paused(true);
+
+        let before = session.elapsed_seconds;
+        session.update(1.0);
+
+        assert_eq!(
+            session.elapsed_seconds, before,
+            "elapsed time should not change while paused"
+        );
+    }
+
+    #[test]
+    fn resume_allows_time_progression() {
+        let mut session = GameSession::new(sample_settings(), 0.0);
+        session.set_paused(true);
+        session.update(1.0);
+        session.set_paused(false);
+        session.update(0.5);
+
+        assert!(
+            session.elapsed_seconds > 0.0,
+            "time should advance after resume"
+        );
+    }
+
+    #[test]
+    fn input_ignored_while_paused() {
+        let mut session = GameSession::new(sample_settings(), 0.0);
+        session.words = vec![ActiveWord {
+            id: "a".to_string(),
+            text: "go".to_string(),
+            x: 0.5,
+            y: 0.3,
+            speed: 0.1,
+            mistake_flash: 0.0,
+        }];
+        session.set_paused(true);
+
+        session.handle_printable_input('g');
+        assert!(session.typed_buffer.is_empty(), "input should be ignored while paused");
+    }
+
+    // --- Game over ---
+
+    #[test]
+    fn game_over_when_water_reaches_max() {
+        let mut session = GameSession::new(sample_settings(), 0.0);
+        session.water_level = 0.998;
+        session.target_water_level = 1.0;
+
+        // Keep ticking until game over triggers
+        for _ in 0..200 {
+            session.update_waterline(0.016);
+            if session.game_over {
+                break;
+            }
+        }
+
+        assert!(session.game_over, "game should end when water reaches max");
+        assert!((session.water_level - 1.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn game_over_session_stops_updating() {
+        let mut session = GameSession::new(sample_settings(), 0.0);
+        session.game_over = true;
+
+        let before = session.elapsed_seconds;
+        session.update(1.0);
+        assert_eq!(
+            session.elapsed_seconds, before,
+            "game over session should not advance"
+        );
+    }
+
+    #[test]
+    fn game_over_produces_end_summary() {
+        let mut session = GameSession::new(sample_settings(), 0.0);
+        session.elapsed_seconds = 30.0;
+        session.score = 500;
+        session.level = 3;
+        session.game_over = true;
+
+        let summary = session.end_summary();
+        assert!(summary.is_some());
+
+        let summary = summary.unwrap();
+        assert_eq!(summary.score, 500);
+        assert_eq!(summary.level_reached, 3);
+        assert_eq!(summary.mode, "medium");
+    }
+
+    #[test]
+    fn no_end_summary_while_playing() {
+        let session = GameSession::new(sample_settings(), 0.0);
+        assert!(session.end_summary().is_none());
+    }
+
+    // --- Utility functions ---
+
+    #[test]
+    fn word_difficulty_score_accounts_for_patterns() {
+        let simple = word_difficulty_score("cat");
+        let complex = word_difficulty_score("thought");
+
+        assert!(complex > simple, "thought should score higher than cat");
+    }
+
+    #[test]
+    fn compute_accuracy_handles_zero() {
+        assert_eq!(compute_accuracy(0, 0), 0.0);
+        assert!((compute_accuracy(8, 10) - 0.8).abs() < 0.001);
     }
 }
