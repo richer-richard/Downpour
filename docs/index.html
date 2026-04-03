@@ -3,220 +3,135 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Downpour</title>
+    <title>Downpour — neon city typing survival</title>
     <meta
       name="description"
-      content="Downpour is a macOS-first typing game released as a build-from-source installation."
+      content="Words fall like rain through a neon city. Type them before they drown. A macOS desktop game built with Tauri and Rust."
     />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <div class="page-shell">
-      <header class="hero">
-        <div class="hero-copy">
-          <p class="eyebrow">macOS build-from-source release</p>
-          <div class="wordmark" aria-label="Downpour">
-            <span class="wordmark-echo" aria-hidden="true">Downpour</span>
-            <h1 class="wordmark-main">Downpour</h1>
-            <span class="wordmark-shimmer" aria-hidden="true">Downpour</span>
-          </div>
-          <p class="lede">
-            A neon storm of falling words, rising water, and clean key timing. Install it from
-            tagged source, build it locally, and drop the app straight into
-            <code>/Applications</code>.
-          </p>
-          <div class="hero-actions">
-            <a
-              class="button button-primary"
-              href="https://github.com/richer-richard/Downpour/releases/tag/v0.1.0"
-            >
-              View v0.1.0 Release
-            </a>
-            <a class="button button-secondary" href="https://github.com/richer-richard/Downpour">
-              Browse Source
-            </a>
-          </div>
-        </div>
+    <div class="rain-layer" aria-hidden="true"></div>
 
-        <div class="hero-art" aria-hidden="true">
-          <div class="glow glow-cyan"></div>
-          <div class="glow glow-amber"></div>
-          <div class="logo-frame">
-            <img src="./assets/logo-mark.svg" alt="" />
+    <div class="site">
+      <header class="masthead">
+        <div class="logo-lockup">
+          <img src="./assets/logo-mark.svg" alt="" class="logo-img" />
+          <div>
+            <h1 class="title">Downpour</h1>
+            <p class="subtitle">neon city typing survival</p>
           </div>
         </div>
+        <nav class="nav">
+          <a href="https://github.com/richer-richard/Downpour">source</a>
+          <a href="https://github.com/richer-richard/Downpour/releases">releases</a>
+        </nav>
       </header>
 
       <main>
-        <section class="panel panel-highlight">
-          <div>
-            <p class="section-label">Release shape</p>
-            <h2>Source-first, local build, no binary download</h2>
-          </div>
-          <p>
-            This release is a build-from-source installation for macOS. It does not ship a notarized
-            <code>.app</code>, <code>.zip</code>, or <code>.dmg</code>. Download the tagged source,
-            run <code>./install.sh</code>, and let the script handle the toolchain, app build,
-            install, and local cleanup.
+        <section class="pitch">
+          <p class="pitch-line">
+            Words fall through a rain&#8209;soaked city at night.<br />
+            Type them before they hit the water.
+          </p>
+          <p class="pitch-detail">
+            The waterline rises with every miss. Clear words fast enough and it falls back.
+            Let it flood and the game ends. That's it. No tutorials, no cutscenes, no
+            loot boxes. Just you and a storm of words getting faster.
           </p>
         </section>
 
-        <section class="deck-shell">
-          <article class="panel install-stage">
-            <div class="install-stage__header">
-              <div>
-                <p class="section-label">Install</p>
-                <h2>Run the installer from the release source</h2>
-              </div>
-              <div class="chip-row" aria-label="Install traits">
-                <span class="info-chip">macOS</span>
-                <span class="info-chip">local build</span>
-                <span class="info-chip">/Applications</span>
-              </div>
-            </div>
+        <section class="showcase">
+          <div class="showcase-card">
+            <span class="card-label">The loop</span>
+            <p>
+              Words spawn at the top of the screen and drift down. Start typing and the game
+              locks onto matching words. Finish the word, it clears. Miss it, the water rises.
+              Build combos for higher scores. Your WPM is tracked in real time.
+            </p>
+          </div>
+          <div class="showcase-card">
+            <span class="card-label">Difficulty</span>
+            <p>
+              Five modes from Very Easy to Very Hard. Each one changes how fast words fall,
+              how often they spawn, and how many can be on screen. The game also gets harder
+              as you play — levels advance every 15 seconds or 7 cleared words.
+            </p>
+          </div>
+          <div class="showcase-card">
+            <span class="card-label">Under the hood</span>
+            <p>
+              Tauri desktop shell with a Rust game engine handling physics, scoring, and word
+              selection over IPC. React frontend with a three-layer canvas pipeline. Words come
+              from curated SCOWL lists bucketed by phonetic difficulty.
+            </p>
+          </div>
+        </section>
 
-            <div class="terminal-window">
-              <div class="terminal-window__chrome">
-                <span></span>
-                <span></span>
-                <span></span>
-                <p>build-from-source session</p>
-              </div>
-              <pre><code>git clone https://github.com/richer-richard/Downpour.git
-cd Downpour
-git checkout v0.1.0
-./install.sh</code></pre>
+        <section class="install">
+          <h2>Get it running</h2>
+          <p class="install-note">
+            macOS only. No binary download — you build it from source. The install script
+            handles everything: Xcode CLI tools, Homebrew, Node, pnpm, Rust, the build itself,
+            and copying <code>Downpour.app</code> into <code>/Applications</code>.
+          </p>
+          <div class="terminal">
+            <div class="terminal-bar">
+              <span class="dot dot-red"></span>
+              <span class="dot dot-yellow"></span>
+              <span class="dot dot-green"></span>
             </div>
+            <pre><code><span class="cmd">git clone</span> https://github.com/richer-richard/Downpour.git
+<span class="cmd">cd</span> Downpour
+<span class="cmd">git checkout</span> v0.2.0
+<span class="cmd">./install.sh</span></code></pre>
+          </div>
+          <p class="install-aside">
+            First build takes a few minutes (Rust compilation). After that, rebuilds are fast.
+            If macOS Gatekeeper complains on first launch, right-click the app and choose Open.
+          </p>
+        </section>
 
-            <div class="install-stage__footer">
-              <p class="muted">The first build can take several minutes on a fresh machine.</p>
-              <div class="install-stage__metrics" aria-label="Install metrics">
-                <div class="metric-card">
-                  <strong>4</strong>
-                  <span>phases automated</span>
-                </div>
-                <div class="metric-card">
-                  <strong>0</strong>
-                  <span>binary downloads</span>
-                </div>
-                <div class="metric-card">
-                  <strong>1</strong>
-                  <span>app copied into /Applications</span>
-                </div>
-              </div>
-            </div>
-          </article>
-
-          <article class="panel process-rail">
-            <p class="section-label">Build path</p>
-            <h3>What the script actually does</h3>
-            <ol class="process-list">
-              <li class="process-step">
-                <span class="process-step__index">01</span>
-                <div class="process-step__body">
-                  <h4>Provision the toolchain</h4>
-                  <p>
-                    Checks or installs Xcode Command Line Tools, Homebrew, Node.js, pnpm, and Rust.
-                  </p>
-                </div>
-              </li>
-              <li class="process-step">
-                <span class="process-step__index">02</span>
-                <div class="process-step__body">
-                  <h4>Build the tagged source</h4>
-                  <p>Compiles <code>Downpour.app</code> locally from the release checkout.</p>
-                </div>
-              </li>
-              <li class="process-step">
-                <span class="process-step__index">03</span>
-                <div class="process-step__body">
-                  <h4>Install the finished app</h4>
-                  <p>
-                    Copies the application bundle into <code>/Applications</code> and replaces any
-                    older install.
-                  </p>
-                </div>
-              </li>
-              <li class="process-step">
-                <span class="process-step__index">04</span>
-                <div class="process-step__body">
-                  <h4>Clear repo-local build residue</h4>
-                  <p>
-                    Removes the generated frontend and Tauri build artifacts after the install
-                    completes.
-                  </p>
-                </div>
-              </li>
-            </ol>
-          </article>
-
-          <article class="panel system-briefing">
-            <div class="system-briefing__header">
-              <div>
-                <p class="section-label">macOS briefing</p>
-                <h3>What to expect on first launch</h3>
-              </div>
-              <span class="briefing-badge">build-from-source</span>
-            </div>
-
-            <div class="briefing-grid">
-              <div class="briefing-card">
-                <span class="briefing-card__label">Platform</span>
-                <p>macOS only, installed as a local application bundle.</p>
-              </div>
-              <div class="briefing-card">
-                <span class="briefing-card__label">Permissions</span>
-                <p>
-                  The installer may request administrator access when writing into
-                  <code>/Applications</code>.
-                </p>
-              </div>
-              <div class="briefing-card">
-                <span class="briefing-card__label">First launch</span>
-                <p>If Gatekeeper warns, open the app from Finder or allow it in System Settings.</p>
-              </div>
-            </div>
-          </article>
-
-          <article class="panel repo-dock">
-            <div class="repo-dock__header">
-              <div>
-                <p class="section-label">Repository</p>
-                <h3>Open the right source surface</h3>
-              </div>
-              <p class="repo-dock__lede">
-                Everything below points to the source-first release path, the docs, and the desktop
-                app itself.
-              </p>
-            </div>
-
-            <div class="dock-links">
-              <a class="dock-link" href="https://github.com/richer-richard/Downpour/releases">
-                <span class="dock-link__title">All releases</span>
-                <span class="dock-link__meta">Tagged source archives and release notes.</span>
-              </a>
-              <a
-                class="dock-link"
-                href="https://github.com/richer-richard/Downpour/blob/main/README.md"
-              >
-                <span class="dock-link__title">README</span>
-                <span class="dock-link__meta"
-                  >Install guidance, toolchain notes, and troubleshooting.</span
-                >
-              </a>
-              <a
-                class="dock-link"
-                href="https://github.com/richer-richard/Downpour/tree/main/apps/downpour-desktop"
-              >
-                <span class="dock-link__title">Desktop app source</span>
-                <span class="dock-link__meta"
-                  >Tauri shell, React frontend, and desktop packaging.</span
-                >
-              </a>
-            </div>
-          </article>
+        <section class="whats-new">
+          <h2>What's in v0.2.0</h2>
+          <ul class="changelog">
+            <li>
+              <strong>Structured error handling</strong> — Rust errors now serialize as
+              typed <code>{code, message}</code> objects instead of flat strings.
+            </li>
+            <li>
+              <strong>Test coverage</strong> — 60 frontend tests (React Testing Library) and
+              33 Rust engine tests covering scoring, waterline physics, difficulty scaling,
+              session lifecycle, pause/resume, and game over.
+            </li>
+            <li>
+              <strong>CI/CD pipeline</strong> — GitHub Actions with parallel lint, typecheck,
+              frontend tests, Rust tests, and a full Tauri build on every PR and push to main.
+            </li>
+            <li>
+              <strong>Cleaner state management</strong> — App.tsx broken into focused hooks
+              (useSettings, useBootstrap, useRecords). Dead state machine files removed.
+            </li>
+            <li>
+              <strong>Polished settings</strong> — Custom neon toggle switches and inline
+              dropdowns replace the native browser controls.
+            </li>
+            <li>
+              <strong>Documentation</strong> — Every game constant is commented with its
+              purpose and tuning rationale. New architecture doc covers the dual-engine
+              design, Tauri bridge batching, and canvas pipeline.
+            </li>
+          </ul>
         </section>
       </main>
+
+      <footer class="footer">
+        <p>
+          Built by
+          <a href="https://github.com/richer-richard">Richard Huang</a>.
+          Source on <a href="https://github.com/richer-richard/Downpour">GitHub</a>.
+        </p>
+      </footer>
     </div>
   </body>
 </html>
