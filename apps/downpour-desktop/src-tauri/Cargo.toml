@@ -1,6 +1,6 @@
 [package]
 name = "downpour"
-version = "0.2.0"
+version = "0.2.1"
 description = "Downpour desktop typing game"
 authors = ["Richard Huang"]
 edition = "2021"
