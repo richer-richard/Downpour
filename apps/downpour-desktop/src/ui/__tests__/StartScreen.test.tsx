@@ -7,6 +7,7 @@ describe('StartScreen', () => {
   const defaults = {
     bestWpm: 72.5,
     onStart: vi.fn(),
+    onOpenLearn: vi.fn(),
     onOpenRecords: vi.fn(),
     onOpenSettings: vi.fn(),
   };
@@ -16,11 +17,20 @@ describe('StartScreen', () => {
     expect(screen.getByText(/Best WPM: 72\.5/)).toBeInTheDocument();
   });
 
-  it('renders Start, Records, and Settings buttons', () => {
+  it('renders Start, Learn, Records, and Settings buttons', () => {
     render(<StartScreen {...defaults} />);
     expect(screen.getByRole('button', { name: 'Start' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Learn' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Records' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Settings' })).toBeInTheDocument();
+  });
+
+  it('fires onOpenLearn when Learn is clicked', async () => {
+    const onOpenLearn = vi.fn();
+    render(<StartScreen {...defaults} onOpenLearn={onOpenLearn} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Learn' }));
+    expect(onOpenLearn).toHaveBeenCalledOnce();
   });
 
   it('fires onStart when Start is clicked', async () => {

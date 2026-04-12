@@ -58,6 +58,8 @@ pub fn run() {
             commands::create_game_session,
             commands::tick_game_session,
             commands::destroy_game_session,
+            commands::get_lesson_progress,
+            commands::save_lesson_progress,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Downpour application");

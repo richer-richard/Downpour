@@ -4,15 +4,19 @@ import type { SessionEndSummary } from '../game/gameController';
 import { persistBestWpm, persistRecord } from '../tauri/storage';
 import { toErrorMessage } from './errors';
 import { useBootstrap } from './useBootstrap';
+import { useLearnProgress } from './useLearnProgress';
 import { useRecords } from './useRecords';
 import { useSettings } from './useSettings';
 import { EndScreen } from '../ui/screens/EndScreen';
 import { GameScreen } from '../ui/screens/GameScreen';
+import { LearnScreen } from '../ui/screens/LearnScreen';
+import { LessonScreen } from '../ui/screens/LessonScreen';
 import { RecordsScreen } from '../ui/screens/RecordsScreen';
 import { SettingsScreen } from '../ui/screens/SettingsScreen';
 import { StartScreen } from '../ui/screens/StartScreen';
+import { getLesson } from '../learn/lessons';
 
-export type AppView = 'start' | 'playing' | 'ended' | 'records' | 'settings';
+export type AppView = 'start' | 'playing' | 'ended' | 'records' | 'settings' | 'learn' | 'lesson';
 
 export function App() {
   const [view, setView] = useState<AppView>('start');
@@ -20,6 +24,7 @@ export function App() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [sessionKey, setSessionKey] = useState(0);
   const [runtimeError, setRuntimeError] = useState<string | null>(null);
+  const [currentLessonId, setCurrentLessonId] = useState<string | null>(null);
 
   const { settings, setSettings } = useSettings();
   const { booting, bootError, globalBestWpm, setGlobalBestWpm, initialRecords, retry } = useBootstrap();
@@ -28,6 +33,7 @@ export function App() {
     setGlobalBestWpm,
     setRuntimeError,
   );
+  const { progress: learnProgress, markLessonComplete } = useLearnProgress(setRuntimeError);
 
   const onStart = useCallback(() => {
     setSaveStatus('idle');
@@ -48,6 +54,31 @@ export function App() {
     setRuntimeError(null);
     setView('settings');
   }, []);
+
+  const onOpenLearn = useCallback(() => {
+    setRuntimeError(null);
+    setCurrentLessonId(null);
+    setView('learn');
+  }, []);
+
+  const onSelectLesson = useCallback((id: string) => {
+    setCurrentLessonId(id);
+    setView('lesson');
+  }, []);
+
+  const onBackToLearn = useCallback(() => {
+    setCurrentLessonId(null);
+    setView('learn');
+  }, []);
+
+  const onLessonComplete = useCallback(
+    async (result: Parameters<typeof markLessonComplete>[0]) => {
+      await markLessonComplete(result);
+      setCurrentLessonId(null);
+      setView('learn');
+    },
+    [markLessonComplete],
+  );
 
   const onBackToStart = useCallback(() => {
     setView('start');
@@ -153,6 +184,25 @@ export function App() {
       return <SettingsScreen settings={settings} onChange={setSettings} onBack={onBackToStart} />;
     }
 
+    if (view === 'learn') {
+      return (
+        <LearnScreen
+          progress={learnProgress}
+          onSelectLesson={onSelectLesson}
+          onBack={onBackToStart}
+        />
+      );
+    }
+
+    if (view === 'lesson' && currentLessonId) {
+      const lesson = getLesson(currentLessonId);
+      if (lesson) {
+        return (
+          <LessonScreen lesson={lesson} onBack={onBackToLearn} onComplete={onLessonComplete} />
+        );
+      }
+    }
+
     if (view === 'ended' && sessionSummary) {
       return (
         <EndScreen
@@ -171,6 +221,7 @@ export function App() {
       <StartScreen
         bestWpm={globalBestWpm}
         onStart={onStart}
+        onOpenLearn={onOpenLearn}
         onOpenRecords={() => {
           void onOpenRecords();
         }}
@@ -180,11 +231,17 @@ export function App() {
   }, [
     bootError,
     booting,
+    currentLessonId,
     globalBestWpm,
+    learnProgress,
+    onBackToLearn,
     onBackToStart,
+    onLessonComplete,
+    onOpenLearn,
     onOpenRecords,
     onOpenSettings,
     onRunEnd,
+    onSelectLesson,
     onStart,
     records,
     recordsLoading,

@@ -4,11 +4,18 @@ import { DownpourLogo } from '../components/DownpourLogo';
 interface StartScreenProps {
   bestWpm: number;
   onStart: () => void;
+  onOpenLearn: () => void;
   onOpenRecords: () => void;
   onOpenSettings: () => void;
 }
 
-export function StartScreen({ bestWpm, onStart, onOpenRecords, onOpenSettings }: StartScreenProps) {
+export function StartScreen({
+  bestWpm,
+  onStart,
+  onOpenLearn,
+  onOpenRecords,
+  onOpenSettings,
+}: StartScreenProps) {
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-4">
       <div aria-hidden="true" className="start-screen-ambient">
@@ -26,6 +33,7 @@ export function StartScreen({ bestWpm, onStart, onOpenRecords, onOpenSettings }:
 
         <div className="mx-auto mb-7 flex w-full max-w-lg flex-wrap justify-center gap-3">
           <NeonButton onClick={onStart}>Start</NeonButton>
+          <NeonButton onClick={onOpenLearn}>Learn</NeonButton>
           <NeonButton onClick={onOpenRecords}>Records</NeonButton>
           <NeonButton onClick={onOpenSettings}>Settings</NeonButton>
         </div>

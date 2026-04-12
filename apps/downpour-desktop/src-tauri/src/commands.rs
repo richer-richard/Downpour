@@ -5,6 +5,7 @@ use crate::{
     errors::AppError,
     models::GameRecord,
     models::GameRecordInput,
+    models::{LessonProgress, LessonProgressInput},
     AppState,
 };
 
@@ -55,4 +56,17 @@ pub fn tick_game_session(
 #[tauri::command]
 pub fn destroy_game_session(state: State<'_, AppState>, session_id: String) -> Result<(), AppError> {
     state.engine.destroy_session(&session_id)
+}
+
+#[tauri::command]
+pub fn get_lesson_progress(state: State<'_, AppState>) -> Result<Vec<LessonProgress>, AppError> {
+    state.db.get_lesson_progress()
+}
+
+#[tauri::command]
+pub fn save_lesson_progress(
+    state: State<'_, AppState>,
+    entry: LessonProgressInput,
+) -> Result<(), AppError> {
+    state.db.save_lesson_progress(entry)
 }

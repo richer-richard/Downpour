@@ -1,14 +1,21 @@
 import {
   assertGameRecordArray,
+  assertLessonProgressArray,
   isGameRecordArray,
+  isLessonProgressArray,
+  sanitizeLessonProgressInput,
   sanitizeRecordInput,
   type GameRecord,
   type GameRecordInput,
+  type LessonProgress,
+  type LessonProgressInput,
 } from '@downpour/shared';
 import {
   getBestWpmCommand,
+  getLessonProgressCommand,
   getRecordsCommand,
   resetRecordsCommand,
+  saveLessonProgressCommand,
   saveRecordCommand,
   setBestWpmCommand,
 } from './commands';
@@ -16,33 +23,39 @@ import { isTauriRuntime } from './runtime';
 
 const SNAPSHOT_KEY = 'downpour.local.snapshot';
 const STORAGE_VERSION_KEY = 'downpour.storage.version';
-const STORAGE_VERSION = 2;
+const STORAGE_VERSION = 3;
 
 let storageUpgradePromise: Promise<void> | null = null;
 
 interface LocalSnapshot {
   bestWpm: number;
   records: GameRecord[];
+  lessonProgress: LessonProgress[];
+}
+
+function emptySnapshot(): LocalSnapshot {
+  return { bestWpm: 0, records: [], lessonProgress: [] };
 }
 
 function readLocalSnapshot(): LocalSnapshot {
   if (typeof window === 'undefined') {
-    return { bestWpm: 0, records: [] };
+    return emptySnapshot();
   }
 
   const raw = window.localStorage.getItem(SNAPSHOT_KEY);
   if (!raw) {
-    return { bestWpm: 0, records: [] };
+    return emptySnapshot();
   }
 
   try {
-    const parsed = JSON.parse(raw) as LocalSnapshot;
+    const parsed = JSON.parse(raw) as Partial<LocalSnapshot>;
     return {
       bestWpm: typeof parsed.bestWpm === 'number' ? parsed.bestWpm : 0,
       records: isGameRecordArray(parsed.records) ? parsed.records : [],
+      lessonProgress: isLessonProgressArray(parsed.lessonProgress) ? parsed.lessonProgress : [],
     };
   } catch {
-    return { bestWpm: 0, records: [] };
+    return emptySnapshot();
   }
 }
 
@@ -73,16 +86,31 @@ function writeStorageVersion(version: number): void {
 }
 
 async function ensureStorageUpgrade(): Promise<void> {
-  if (typeof window === 'undefined' || readStorageVersion() >= STORAGE_VERSION) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const currentVersion = readStorageVersion();
+  if (currentVersion >= STORAGE_VERSION) {
     return;
   }
 
   if (!storageUpgradePromise) {
     storageUpgradePromise = (async () => {
-      if (isTauriRuntime()) {
-        await Promise.all([resetRecordsCommand(), setBestWpmCommand(0)]);
-      } else {
-        writeLocalSnapshot({ bestWpm: 0, records: [] });
+      if (currentVersion < 2) {
+        if (isTauriRuntime()) {
+          await Promise.all([resetRecordsCommand(), setBestWpmCommand(0)]);
+        } else {
+          writeLocalSnapshot(emptySnapshot());
+        }
+      }
+
+      if (currentVersion < 3 && !isTauriRuntime()) {
+        const snapshot = readLocalSnapshot();
+        if (!Array.isArray(snapshot.lessonProgress)) {
+          snapshot.lessonProgress = [];
+        }
+        writeLocalSnapshot(snapshot);
       }
 
       writeStorageVersion(STORAGE_VERSION);
@@ -157,6 +185,48 @@ export async function resetAllRecords(): Promise<void> {
     return;
   }
 
-  writeLocalSnapshot({ bestWpm: 0, records: [] });
+  const snapshot = readLocalSnapshot();
+  writeLocalSnapshot({ ...emptySnapshot(), lessonProgress: snapshot.lessonProgress });
   writeStorageVersion(STORAGE_VERSION);
+}
+
+export async function loadLessonProgress(): Promise<LessonProgress[]> {
+  await ensureStorageUpgrade();
+
+  if (isTauriRuntime()) {
+    const entries = await getLessonProgressCommand();
+    return assertLessonProgressArray(entries);
+  }
+
+  return readLocalSnapshot().lessonProgress;
+}
+
+export async function persistLessonProgress(input: LessonProgressInput): Promise<void> {
+  await ensureStorageUpgrade();
+
+  const sanitized = sanitizeLessonProgressInput(input);
+
+  if (isTauriRuntime()) {
+    await saveLessonProgressCommand(sanitized);
+    return;
+  }
+
+  const snapshot = readLocalSnapshot();
+  const existing = snapshot.lessonProgress.find((entry) => entry.lessonId === sanitized.lessonId);
+  const merged: LessonProgress = existing
+    ? {
+        lessonId: sanitized.lessonId,
+        completed: existing.completed || sanitized.completed,
+        stars: Math.max(existing.stars, sanitized.stars),
+        bestWpm: Math.max(existing.bestWpm, sanitized.bestWpm),
+        bestAccuracy: Math.max(existing.bestAccuracy, sanitized.bestAccuracy),
+        updatedAt: sanitized.updatedAt,
+      }
+    : sanitized;
+
+  snapshot.lessonProgress = [
+    ...snapshot.lessonProgress.filter((entry) => entry.lessonId !== sanitized.lessonId),
+    merged,
+  ];
+  writeLocalSnapshot(snapshot);
 }

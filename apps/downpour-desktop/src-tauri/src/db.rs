@@ -5,7 +5,7 @@ use rusqlite::{params, Connection};
 use crate::{
     errors::AppError,
     migrations,
-    models::{GameRecord, GameRecordInput},
+    models::{GameRecord, GameRecordInput, LessonProgress, LessonProgressInput},
 };
 
 const MAX_RECORDS: i64 = 1000;
@@ -154,6 +154,64 @@ impl Database {
         tx.execute(
             "INSERT INTO meta(key, value) VALUES ('best_wpm', ?1) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
             params![best.to_string()],
+        )?;
+
+        tx.commit()?;
+        Ok(())
+    }
+
+    pub fn get_lesson_progress(&self) -> Result<Vec<LessonProgress>, AppError> {
+        let conn = self.connection()?;
+        let mut stmt = conn.prepare(
+            r#"
+            SELECT lesson_id, completed, stars, best_wpm, best_accuracy, updated_at
+            FROM lesson_progress
+            ORDER BY lesson_id ASC
+            "#,
+        )?;
+
+        let rows = stmt.query_map([], |row| {
+            let completed_int: i64 = row.get(1)?;
+            Ok(LessonProgress {
+                lesson_id: row.get(0)?,
+                completed: completed_int != 0,
+                stars: row.get(2)?,
+                best_wpm: row.get(3)?,
+                best_accuracy: row.get(4)?,
+                updated_at: row.get(5)?,
+            })
+        })?;
+
+        rows.collect::<Result<Vec<_>, _>>().map_err(AppError::from)
+    }
+
+    pub fn save_lesson_progress(&self, input: LessonProgressInput) -> Result<(), AppError> {
+        input.validate()?;
+        let entry = input.sanitize();
+
+        let mut conn = self.connection()?;
+        let tx = conn.transaction()?;
+
+        tx.execute(
+            r#"
+            INSERT INTO lesson_progress (
+              lesson_id, completed, stars, best_wpm, best_accuracy, updated_at
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+            ON CONFLICT(lesson_id) DO UPDATE SET
+              completed = max(lesson_progress.completed, excluded.completed),
+              stars = max(lesson_progress.stars, excluded.stars),
+              best_wpm = max(lesson_progress.best_wpm, excluded.best_wpm),
+              best_accuracy = max(lesson_progress.best_accuracy, excluded.best_accuracy),
+              updated_at = excluded.updated_at
+            "#,
+            params![
+                entry.lesson_id,
+                entry.completed as i64,
+                entry.stars,
+                entry.best_wpm,
+                entry.best_accuracy,
+                entry.updated_at,
+            ],
         )?;
 
         tx.commit()?;

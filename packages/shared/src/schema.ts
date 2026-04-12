@@ -4,6 +4,8 @@ import type {
   GameRecordInput,
   GameSettings,
   GraphicsQuality,
+  LessonProgress,
+  LessonProgressInput,
   PersistedSnapshot,
 } from './types';
 import { isDifficultyMode, normalizeDifficultyMode } from './types';
@@ -98,6 +100,41 @@ export function isPersistedSnapshot(value: unknown): value is PersistedSnapshot 
 
 export function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
+}
+
+export function isLessonProgress(value: unknown): value is LessonProgress {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+  const entry = value as LessonProgress;
+  return (
+    isString(entry.lessonId) &&
+    typeof entry.completed === 'boolean' &&
+    isFiniteNumber(entry.stars) &&
+    isFiniteNumber(entry.bestWpm) &&
+    isFiniteNumber(entry.bestAccuracy) &&
+    isString(entry.updatedAt)
+  );
+}
+
+export function isLessonProgressArray(value: unknown): value is LessonProgress[] {
+  return Array.isArray(value) && value.every(isLessonProgress);
+}
+
+export function assertLessonProgressArray(value: unknown): LessonProgress[] {
+  if (!isLessonProgressArray(value)) {
+    throw new Error('Invalid LessonProgress[] payload.');
+  }
+  return value;
+}
+
+export function sanitizeLessonProgressInput(input: LessonProgressInput): LessonProgressInput {
+  return {
+    ...input,
+    stars: Math.max(0, Math.min(3, Math.round(input.stars))),
+    bestWpm: Math.max(0, input.bestWpm),
+    bestAccuracy: clamp01(input.bestAccuracy),
+  };
 }
 
 export function sanitizeRecordInput(input: GameRecordInput): GameRecordInput {

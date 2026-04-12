@@ -25,6 +25,15 @@ pub fn apply(conn: &Connection) -> rusqlite::Result<()> {
         );
 
         INSERT OR IGNORE INTO meta(key, value) VALUES ('best_wpm', '0');
+
+        CREATE TABLE IF NOT EXISTS lesson_progress (
+          lesson_id TEXT PRIMARY KEY,
+          completed INTEGER NOT NULL DEFAULT 0,
+          stars INTEGER NOT NULL DEFAULT 0,
+          best_wpm REAL NOT NULL DEFAULT 0,
+          best_accuracy REAL NOT NULL DEFAULT 0,
+          updated_at TEXT NOT NULL
+        );
         "#,
     )
 }

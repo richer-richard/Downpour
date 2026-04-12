@@ -5,6 +5,8 @@ import type {
   GameRecordInput,
   GameSessionFrame,
   GameSettings,
+  LessonProgress,
+  LessonProgressInput,
 } from '@downpour/shared';
 
 export async function getRecordsCommand(): Promise<GameRecord[]> {
@@ -44,4 +46,12 @@ export async function tickGameSessionCommand(
 
 export async function destroyGameSessionCommand(sessionId: string): Promise<void> {
   await invoke('destroy_game_session', { sessionId });
+}
+
+export async function getLessonProgressCommand(): Promise<LessonProgress[]> {
+  return invoke<LessonProgress[]>('get_lesson_progress');
+}
+
+export async function saveLessonProgressCommand(entry: LessonProgressInput): Promise<void> {
+  await invoke('save_lesson_progress', { entry });
 }

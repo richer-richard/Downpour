@@ -96,3 +96,48 @@ impl GameRecordInput {
         }
     }
 }
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct LessonProgress {
+    pub lesson_id: String,
+    pub completed: bool,
+    pub stars: i64,
+    pub best_wpm: f64,
+    pub best_accuracy: f64,
+    pub updated_at: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LessonProgressInput {
+    pub lesson_id: String,
+    pub completed: bool,
+    pub stars: i64,
+    pub best_wpm: f64,
+    pub best_accuracy: f64,
+    pub updated_at: String,
+}
+
+impl LessonProgressInput {
+    pub fn validate(&self) -> Result<(), AppError> {
+        if self.lesson_id.trim().is_empty() {
+            return Err(AppError::Validation("lessonId cannot be empty".to_string()));
+        }
+        if self.updated_at.trim().is_empty() {
+            return Err(AppError::Validation("updatedAt cannot be empty".to_string()));
+        }
+        Ok(())
+    }
+
+    pub fn sanitize(self) -> LessonProgress {
+        LessonProgress {
+            lesson_id: self.lesson_id,
+            completed: self.completed,
+            stars: self.stars.clamp(0, 3),
+            best_wpm: self.best_wpm.max(0.0),
+            best_accuracy: self.best_accuracy.clamp(0.0, 1.0),
+            updated_at: self.updated_at,
+        }
+    }
+}

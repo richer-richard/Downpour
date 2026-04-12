@@ -64,6 +64,17 @@ export interface GameRecord {
 
 export type GameRecordInput = GameRecord;
 
+export interface LessonProgress {
+  lessonId: string;
+  completed: boolean;
+  stars: number;
+  bestWpm: number;
+  bestAccuracy: number;
+  updatedAt: string;
+}
+
+export type LessonProgressInput = LessonProgress;
+
 export interface GameSettings {
   reducedMotion: boolean;
   graphicsQuality: GraphicsQuality;
