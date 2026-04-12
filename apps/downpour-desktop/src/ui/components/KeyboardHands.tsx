@@ -1,14 +1,14 @@
 import { KEYBOARD_KEYS, type FingerId } from '../../learn/keyboardLayout';
 
 interface KeyboardHandsProps {
-  highlightKey?: string;
-  highlightFinger?: FingerId;
+  highlightKey?: string | string[];
+  highlightFinger?: FingerId | FingerId[];
   pressedKey?: string;
 }
 
-const UNIT = 44;
+const UNIT = 40;
 const GAP = 4;
-const KEYBOARD_COLS = 14;
+const KEYBOARD_COLS = 15;
 const KEYBOARD_ROWS = 5;
 const WIDTH = KEYBOARD_COLS * UNIT + GAP * 2;
 const HEIGHT = KEYBOARD_ROWS * UNIT + GAP * 2;
@@ -36,12 +36,12 @@ function keyY(row: number): number {
 
 interface HandProps {
   side: 'left' | 'right';
-  highlightFinger?: FingerId;
+  highlightFingers: Set<FingerId>;
 }
 
 // Simplified hand: palm as a rounded rect, five tapered fingers extending up to the home row.
 // Fingers are grouped so we can highlight one.
-function Hand({ side, highlightFinger }: HandProps) {
+function Hand({ side, highlightFingers }: HandProps) {
   const fingers: Array<{ id: FingerId; label: string }> =
     side === 'left'
       ? [
@@ -89,7 +89,7 @@ function Hand({ side, highlightFinger }: HandProps) {
         const tipX = keyX(anchor.x + 0.5);
         const tipY = keyY(anchor.y);
         const baseY = palmY + palmHeight * 0.15;
-        const isHighlighted = highlightFinger === finger.id;
+        const isHighlighted = highlightFingers.has(finger.id);
         const stroke = isHighlighted ? 'rgba(124, 220, 255, 1)' : 'rgba(124, 220, 255, 0.35)';
         const fill = isHighlighted ? 'rgba(124, 220, 255, 0.25)' : 'rgba(124, 220, 255, 0.05)';
         const width = UNIT * 0.55;
@@ -114,7 +114,7 @@ function Hand({ side, highlightFinger }: HandProps) {
       {/* thumb */}
       {(() => {
         const thumbId: FingerId = 'THUMB';
-        const isHighlighted = highlightFinger === thumbId;
+        const isHighlighted = highlightFingers.has(thumbId);
         const thumbTipX = side === 'left' ? palmRight - UNIT * 0.3 : palmLeft + UNIT * 0.3;
         const thumbTipY = keyY(4.6);
         const thumbBaseX = side === 'left' ? palmRight - UNIT * 0.1 : palmLeft + UNIT * 0.1;
@@ -139,7 +139,14 @@ function Hand({ side, highlightFinger }: HandProps) {
 }
 
 export function KeyboardHands({ highlightKey, highlightFinger, pressedKey }: KeyboardHandsProps) {
-  const normalizedHighlight = highlightKey?.toLowerCase();
+  const highlightKeys = new Set(
+    (Array.isArray(highlightKey) ? highlightKey : highlightKey ? [highlightKey] : []).map((k) =>
+      k.toLowerCase(),
+    ),
+  );
+  const highlightFingers = new Set<FingerId>(
+    Array.isArray(highlightFinger) ? highlightFinger : highlightFinger ? [highlightFinger] : [],
+  );
   const normalizedPressed = pressedKey?.toLowerCase();
 
   return (
@@ -165,7 +172,7 @@ export function KeyboardHands({ highlightKey, highlightFinger, pressedKey }: Key
 
       {/* keys */}
       {KEYBOARD_KEYS.map((keyDef) => {
-        const isHighlighted = normalizedHighlight === keyDef.key;
+        const isHighlighted = highlightKeys.has(keyDef.key);
         const isPressed = normalizedPressed === keyDef.key;
         const x = keyX(keyDef.col);
         const y = keyY(keyDef.row);
@@ -220,8 +227,8 @@ export function KeyboardHands({ highlightKey, highlightFinger, pressedKey }: Key
 
       {/* hands overlaid on keyboard */}
       <g opacity={0.9}>
-        <Hand side="left" highlightFinger={highlightFinger} />
-        <Hand side="right" highlightFinger={highlightFinger} />
+        <Hand side="left" highlightFingers={highlightFingers} />
+        <Hand side="right" highlightFingers={highlightFingers} />
       </g>
     </svg>
   );

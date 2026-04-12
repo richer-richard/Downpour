@@ -60,6 +60,7 @@ export const KEYBOARD_KEYS: KeyDef[] = [
   { key: 'p', label: 'p', row: 1, col: 10.5, width: 1, finger: 'R_PINKY' },
   { key: '[', label: '[', row: 1, col: 11.5, width: 1, finger: 'R_PINKY' },
   { key: ']', label: ']', row: 1, col: 12.5, width: 1, finger: 'R_PINKY' },
+  { key: '\\', label: '\\', row: 1, col: 13.5, width: 1, finger: 'R_PINKY' },
 
   // Row 2 — home row
   { key: 'a', label: 'a', row: 2, col: 1.75, width: 1, finger: 'L_PINKY' },
@@ -86,9 +87,65 @@ export const KEYBOARD_KEYS: KeyDef[] = [
   { key: '.', label: '.', row: 3, col: 10.25, width: 1, finger: 'R_RING' },
   { key: '/', label: '/', row: 3, col: 11.25, width: 1, finger: 'R_PINKY' },
 
+  // Row 3 shift keys (pseudo-keys, non-character highlights)
+  { key: 'shift_l', label: 'shift', row: 3, col: 0, width: 2.25, finger: 'L_PINKY' },
+  { key: 'shift_r', label: 'shift', row: 3, col: 12.25, width: 2.75, finger: 'R_PINKY' },
+
   // Row 4 — space
   { key: ' ', label: 'space', row: 4, col: 3.75, width: 6, finger: 'THUMB' },
 ];
+
+export const SHIFT_MAP: Record<string, string> = {
+  '!': '1',
+  '@': '2',
+  '#': '3',
+  $: '4',
+  '%': '5',
+  '^': '6',
+  '&': '7',
+  '*': '8',
+  '(': '9',
+  ')': '0',
+  _: '-',
+  '+': '=',
+  '{': '[',
+  '}': ']',
+  '|': '\\',
+  ':': ';',
+  '"': "'",
+  '<': ',',
+  '>': '.',
+  '?': '/',
+  '~': '`',
+};
+
+export function baseKey(char: string): string {
+  if (char.length !== 1) return char;
+  if (char >= 'A' && char <= 'Z') return char.toLowerCase();
+  return SHIFT_MAP[char] ?? char;
+}
+
+export function requiresShift(char: string): boolean {
+  if (char.length !== 1) return false;
+  if (char >= 'A' && char <= 'Z') return true;
+  return Object.prototype.hasOwnProperty.call(SHIFT_MAP, char);
+}
+
+// Returns the shift key to press, using the opposite hand from the base key's finger.
+export function shiftKeyFor(char: string): 'shift_l' | 'shift_r' | undefined {
+  if (!requiresShift(char)) return undefined;
+  const base = baseKey(char);
+  const keyDef = findKey(base);
+  if (!keyDef) return 'shift_l';
+  const leftFingers: FingerId[] = ['L_PINKY', 'L_RING', 'L_MIDDLE', 'L_INDEX'];
+  return leftFingers.includes(keyDef.finger) ? 'shift_r' : 'shift_l';
+}
+
+export function shiftFingerFor(char: string): FingerId | undefined {
+  const shiftKey = shiftKeyFor(char);
+  if (!shiftKey) return undefined;
+  return shiftKey === 'shift_l' ? 'L_PINKY' : 'R_PINKY';
+}
 
 export function findKey(char: string): KeyDef | undefined {
   const lower = char.toLowerCase();

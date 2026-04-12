@@ -22,6 +22,24 @@ function introLesson(): Lesson {
   };
 }
 
+function capitalIntroLesson(): Lesson {
+  return {
+    id: 'test.capital',
+    unit: 'Test',
+    order: 1,
+    title: 'Key: F (capital)',
+    summary: 'test',
+    steps: [
+      {
+        kind: 'intro_key',
+        key: 'F',
+        finger: 'L_INDEX',
+        description: 'Shift + f',
+      },
+    ],
+  };
+}
+
 describe('LessonScreen', () => {
   it('advances past an intro step when the correct key is pressed', async () => {
     const onComplete = vi.fn();
@@ -42,6 +60,21 @@ describe('LessonScreen', () => {
 
     await userEvent.keyboard('g');
     expect(onComplete).not.toHaveBeenCalled();
+  });
+
+  it('distinguishes lowercase from uppercase for capital-key lessons', async () => {
+    const onComplete = vi.fn();
+    render(<LessonScreen lesson={capitalIntroLesson()} onBack={vi.fn()} onComplete={onComplete} />);
+
+    // lowercase f should NOT advance a capital-F lesson
+    await userEvent.keyboard('f');
+    expect(onComplete).not.toHaveBeenCalled();
+
+    // Shift+f should
+    await userEvent.keyboard('{Shift>}F{/Shift}');
+    expect(onComplete).toHaveBeenCalledWith(
+      expect.objectContaining({ lessonId: 'test.capital' }),
+    );
   });
 
   it('fires onBack when Back is clicked', async () => {

@@ -5,7 +5,14 @@ import {
   PracticeController,
   type PracticeState,
 } from '../../learn/practiceController';
-import { findKey, FINGER_LABELS, type FingerId } from '../../learn/keyboardLayout';
+import {
+  baseKey,
+  findKey,
+  FINGER_LABELS,
+  shiftFingerFor,
+  shiftKeyFor,
+  type FingerId,
+} from '../../learn/keyboardLayout';
 import type { Lesson, LessonStep } from '../../learn/lessons';
 import type { LessonCompletionInput } from '../../app/useLearnProgress';
 
@@ -130,7 +137,7 @@ export function LessonScreen({ lesson, onBack, onComplete }: LessonScreenProps) 
   const progress = ((stepIndex + 1) / lesson.steps.length) * 100;
 
   return (
-    <div className="flex min-h-screen flex-col items-center gap-6 p-8">
+    <div className="flex h-screen flex-col items-center gap-6 overflow-y-auto p-8">
       <header className="flex w-full max-w-4xl items-center justify-between">
         <button
           onClick={onBack}
@@ -225,12 +232,28 @@ function useLessonKeyListener(handler: (char: string) => void, onBackspace?: () 
       }
       if (event.key.length === 1) {
         event.preventDefault();
-        handler(event.key.toLowerCase());
+        handler(event.key);
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [handler, onBackspace]);
+}
+
+function highlightsFor(char: string | undefined): {
+  keys: string[];
+  fingers: FingerId[];
+} {
+  if (!char) return { keys: [], fingers: [] };
+  const base = baseKey(char);
+  const keyDef = findKey(base);
+  const keys: string[] = [base];
+  const fingers: FingerId[] = keyDef ? [keyDef.finger] : [];
+  const sKey = shiftKeyFor(char);
+  const sFinger = shiftFingerFor(char);
+  if (sKey) keys.push(sKey);
+  if (sFinger) fingers.push(sFinger);
+  return { keys, fingers };
 }
 
 interface IntroKeyStepProps {
@@ -275,7 +298,12 @@ function IntroKeyStep({ step, onAdvance, flashKey, pressedKey }: IntroKeyStepPro
         key using your {FINGER_LABELS[step.finger]}.
       </h2>
       <p className="max-w-xl text-center text-sm text-cyan-100/70">{step.description}</p>
-      <KeyboardHands highlightKey={step.key} highlightFinger={step.finger} pressedKey={pressedKey} />
+      {(() => {
+        const h = highlightsFor(step.key);
+        return (
+          <KeyboardHands highlightKey={h.keys} highlightFinger={h.fingers} pressedKey={pressedKey} />
+        );
+      })()}
     </div>
   );
 }
@@ -293,7 +321,7 @@ function DrillStep({ prompt, hint, onAdvance, flashKey, pressedKey }: DrillStepP
   const metricsRef = useRef<StepMetrics>({ ...EMPTY_METRICS });
 
   const nextChar = prompt[typed.length];
-  const nextFinger: FingerId | undefined = nextChar ? findKey(nextChar)?.finger : undefined;
+  const nextHighlights = highlightsFor(nextChar);
 
   const handler = useCallback(
     (char: string) => {
@@ -344,7 +372,11 @@ function DrillStep({ prompt, hint, onAdvance, flashKey, pressedKey }: DrillStepP
           );
         })}
       </div>
-      <KeyboardHands highlightKey={nextChar} highlightFinger={nextFinger} pressedKey={pressedKey} />
+      <KeyboardHands
+        highlightKey={nextHighlights.keys}
+        highlightFinger={nextHighlights.fingers}
+        pressedKey={pressedKey}
+      />
     </div>
   );
 }
@@ -415,7 +447,7 @@ function PracticeStep({ step, onAdvance, flashKey, pressedKey }: PracticeStepPro
   }, [snapshot.elapsedSeconds, step.durationSeconds]);
 
   const nextChar = snapshot.currentWord[snapshot.typed.length] ?? ' ';
-  const nextFinger = findKey(nextChar)?.finger;
+  const nextHighlights = highlightsFor(nextChar);
 
   return (
     <div className="flex w-full flex-col items-center gap-6">
@@ -441,7 +473,11 @@ function PracticeStep({ step, onAdvance, flashKey, pressedKey }: PracticeStepPro
         })}
       </div>
 
-      <KeyboardHands highlightKey={nextChar} highlightFinger={nextFinger} pressedKey={pressedKey} />
+      <KeyboardHands
+        highlightKey={nextHighlights.keys}
+        highlightFinger={nextHighlights.fingers}
+        pressedKey={pressedKey}
+      />
     </div>
   );
 }

@@ -44,6 +44,7 @@ function LessonCard({
     <button
       disabled={!unlocked}
       onClick={() => onSelect(lesson.id)}
+      aria-label={`${lesson.unit}: ${lesson.title}`}
       className={[
         'glass-panel relative flex aspect-[5/4] w-full flex-col items-center justify-center gap-3 rounded-xl p-4 text-center transition',
         unlocked
@@ -79,7 +80,7 @@ export function LearnScreen({ progress, onSelectLesson, onBack }: LearnScreenPro
   const completionPct = Math.round((totalStars / Math.max(1, maxStars)) * 100);
 
   return (
-    <div className="flex min-h-screen flex-col items-center gap-6 p-8">
+    <div className="flex h-screen flex-col items-center gap-6 overflow-y-auto p-8">
       <header className="flex w-full max-w-5xl items-center justify-between">
         <button
           onClick={onBack}
@@ -95,22 +96,30 @@ export function LearnScreen({ progress, onSelectLesson, onBack }: LearnScreenPro
         </span>
       </header>
 
-      <section className="w-full max-w-5xl">
-        <h2 className="mb-4 font-display text-sm uppercase tracking-[0.24em] text-cyan-200/80">
-          Home Row
-        </h2>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-          {LESSONS.map((lesson) => (
-            <LessonCard
-              key={lesson.id}
-              lesson={lesson}
-              progress={progress[lesson.id]}
-              unlocked={isLessonUnlocked(lesson, progress)}
-              onSelect={onSelectLesson}
-            />
-          ))}
-        </div>
-      </section>
+      {(() => {
+        const units: string[] = [];
+        for (const lesson of LESSONS) {
+          if (!units.includes(lesson.unit)) units.push(lesson.unit);
+        }
+        return units.map((unit) => (
+          <section key={unit} className="w-full max-w-5xl">
+            <h2 className="mb-4 font-display text-sm uppercase tracking-[0.24em] text-cyan-200/80">
+              {unit}
+            </h2>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+              {LESSONS.filter((lesson) => lesson.unit === unit).map((lesson) => (
+                <LessonCard
+                  key={lesson.id}
+                  lesson={lesson}
+                  progress={progress[lesson.id]}
+                  unlocked={isLessonUnlocked(lesson, progress)}
+                  onSelect={onSelectLesson}
+                />
+              ))}
+            </div>
+          </section>
+        ));
+      })()}
     </div>
   );
 }
